@@ -1,0 +1,497 @@
+{{define "title"}}运动记录列表{{end}}
+
+{{define "head"}}
+{{end}}
+
+{{define "content"}}
+<style>
+    :root {
+        --primary-color: #4A90E2;
+        --success-color: #7ED321;
+        --warning-color: #F5A623;
+        --danger-color: #D0021B;
+        --light-gray: #F7F7F7;
+        --medium-gray: #EAEAEA;
+        --dark-gray: #333;
+        --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    body {
+        font-family: var(--font-family-sans);
+        background-color: #FFF;
+    }
+
+    .page-title {
+        font-size: 28px;
+        font-weight: 700;
+        margin-bottom: 20px;
+        color: var(--dark-gray);
+    }
+
+    .btn {
+        display: inline-block;
+        padding: 5px 10px;
+        text-decoration: none;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 500;
+        cursor: pointer;
+        border: 1px solid transparent;
+        transition: all 0.2s ease-in-out;
+    }
+    .btn.btn-sm {
+        padding: 4px 12px;
+        font-size: 12px;
+    }
+
+    .btn-primary {
+        background-color: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+    .btn-primary:hover { opacity: 0.9; }
+
+    .btn-secondary {
+        background-color: transparent;
+        color: #555;
+        border-color: var(--medium-gray);
+    }
+    .btn-secondary:hover {
+        background-color: var(--light-gray);
+        border-color: #ccc;
+    }
+    .btn-secondary.active {
+        background-color: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+
+    .btn-danger { background-color: var(--danger-color); color: white; }
+
+    .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .left-buttons {
+        display: flex;
+        gap: 10px; /* 左右按钮间距 */
+    }
+
+    .view-toggle { display: flex; gap: 10px; }
+
+    #list-view.hidden, #calendar-view.hidden { display: none; }
+
+    .date-group {
+        margin-bottom: 20px;
+        border: 1px solid var(--medium-gray);
+        border-radius: 8px;
+        background-color: #fff;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        overflow: hidden;
+    }
+
+    .date-header {
+        background-color: var(--light-gray);
+        padding: 12px 15px;
+        border-bottom: 1px solid var(--medium-gray);
+        font-weight: 500;
+        font-size: 18px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .completion-label {
+        padding: 4px 12px;
+        border-radius: 16px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+    .label-complete { background-color: var(--success-color); color: white; }
+    .label-partial { background-color: var(--warning-color); color: white; }
+
+    /* Calendar Styles */
+    #calendar {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+        border: 1px solid var(--medium-gray);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    #calendar th {
+        background-color: var(--light-gray);
+        padding: 8px;
+        font-weight: 500;
+        color: #777;
+        font-size: 14px;
+    }
+
+    #calendar td {
+        border: 1px solid var(--medium-gray);
+        padding: 4px;
+        text-align: center;
+        vertical-align: top;
+        position: relative;
+        transition: background-color 0.2s ease;
+        height: 90px;
+    }
+    #calendar td:hover { background-color: #fcfcfc; }
+
+    .day-number {
+        font-size: 14px;
+        font-weight: 500;
+        margin-bottom: 4px;
+    }
+    .today .day-number {
+        background-color: var(--primary-color);
+        color: white;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        line-height: 24px;
+        margin: 0 auto 4px;
+    }
+
+    .dot {
+        height: 6px;
+        width: 6px;
+        border-radius: 50%;
+        display: inline-block;
+        position: absolute;
+        bottom: 6px;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+    .dot-complete { background-color: var(--success-color); }
+    .dot-partial { background-color: var(--warning-color); }
+
+    .calendar-header-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .calendar-nav { display: flex; align-items: center; gap: 10px; }
+    .calendar-legend { display: flex; gap: 15px; align-items: center; }
+    .legend-item { display: flex; align-items: center; gap: 8px; }
+    .legend-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; }
+
+    #daily-exercises-display {
+        margin-top: 20px;
+    }
+    #daily-exercises-display:empty { display: none; }
+
+    .daily-exercise-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .daily-exercise-table th, .daily-exercise-table td {
+        border-bottom: 1px solid var(--medium-gray);
+        padding: 12px 15px;
+        text-align: left;
+        vertical-align: middle;
+    }
+    .daily-exercise-table th {
+        background-color: var(--light-gray);
+        font-weight: 500;
+        font-size: 14px;
+        color: #555;
+    }
+    .daily-exercise-table tr:last-child td {
+        border-bottom: none;
+    }
+
+</style>
+
+<div class="container">
+    <div class="page-title">运动记录</div>
+
+    <div class="top-bar">
+        <div class="left-buttons">
+            <a href="/exercise/new" class="btn btn-primary">新增运动记录</a>
+            <a href="/exercise/abdominal" class="btn btn-primary">腹肌训练</a>
+        </div>
+        <div class="view-toggle">
+            <button id="show-list-btn" class="btn btn-secondary active">列表视图</button>
+            <button id="show-calendar-btn" class="btn btn-secondary">日历视图</button>
+        </div>
+    </div>
+
+    <div id="list-view">
+        {{if .dailyExercises}}
+            {{range .dailyExercises}}
+            <div class="date-group">
+                <div class="date-header">
+                    <span>{{.Date}}</span>
+                    {{if .AllCompleted}}
+                    <span class="completion-label label-complete">全部完成</span>
+                    {{else}}
+                    <span class="completion-label label-partial">部分完成 ({{.CompletedTypes}}/3)</span>
+                    {{end}}
+                </div>
+                <table class="daily-exercise-table">
+                    <thead>
+                        <tr>
+                            <th>类型</th>
+                            <th>时间</th>
+                            <th>详情</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{range .Exercises}}
+                        <tr>
+                            <td>
+                                <a href="/exercise/view?id={{.ID}}" style="text-decoration: none;color: #0f172a">{{if eq .TSR 1}}{{if .TSRVerified}}✅{{else}}❌{{end}} {{end}}{{if eq .Type 1}}腹肌{{else if eq .Type 2}}跑步{{else if eq .Type 3}}力量{{end}}</a>
+                            </td>
+                            <td>{{.StartAt.Format "15:04:05"}} - {{.EndAt.Format "15:04:05"}}</td>
+                            <td>
+                                {{if eq .Type 2}}
+                                    {{with .Run}}配速: {{.AvgPace}} km/h, 耗时: {{.RunDuration}}, 距离: {{.Distance}} km{{if eq .RunningWithoutPosition 1}}, 仅计时{{else}}, 定位{{end}}{{end}}
+                                {{else if eq .Type 3}}
+                                    {{with .SitUpPushUp}}俯卧撑: {{.PushUp}} 个, 仰卧起坐: {{.SitUp}} 个,  屈腿卷腹: {{.CurlUp}} 个, 靠墙倒立: {{.LegsUpTheWallPose}} 个{{end}}
+                                {{end}}
+                            </td>
+                            <td>
+                                <a href="/exercise/delete?id={{.ID}}" class="btn btn-danger btn-sm" onclick="return confirm('确定要删除这条记录吗？')">删除</a>
+                            </td>
+                        </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+            </div>
+            {{end}}
+        {{else}}
+        <div class="no-data">
+            <p>暂无运动记录</p>
+        </div>
+        {{end}}
+    </div>
+
+    <div id="calendar-view" class="hidden">
+        <div class="calendar-header-container">
+            <div class="calendar-nav">
+                <button id="prev-year" class="btn btn-secondary"><<</button>
+                <button id="prev-month" class="btn btn-secondary"><</button>
+                <h2 id="month-and-year"></h2>
+                <button id="next-month" class="btn btn-secondary">></button>
+                <button id="next-year" class="btn btn-secondary">>></button>
+            </div>
+            <div class="calendar-legend">
+                <div class="legend-item">
+                    <span class="legend-dot dot-complete"></span>
+                    <span>全部完成</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-dot dot-partial"></span>
+                    <span>部分完成</span>
+                </div>
+            </div>
+        </div>
+        <table id="calendar">
+            <thead>
+                <tr>
+                    <th>日</th><th>一</th><th>二</th><th>三</th><th>四</th><th>五</th><th>六</th>
+                </tr>
+            </thead>
+            <tbody id="calendar-body"></tbody>
+        </table>
+        <div id="daily-exercises-display"></div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const showListBtn = document.getElementById('show-list-btn');
+        const showCalendarBtn = document.getElementById('show-calendar-btn');
+        const listView = document.getElementById('list-view');
+        const calendarView = document.getElementById('calendar-view');
+        const exerciseData = {{.dailyExercisesJSON}};
+        let today = new Date();
+        let currentMonth = today.getMonth();
+        let currentYear = today.getFullYear();
+        const monthAndYear = document.getElementById('month-and-year');
+        const calendarBody = document.getElementById('calendar-body');
+        const dailyExercisesDisplay = document.getElementById('daily-exercises-display');
+
+        function switchToListView(pushHistory = true) {
+            listView.classList.remove('hidden');
+            calendarView.classList.add('hidden');
+            showListBtn.classList.add('active');
+            showCalendarBtn.classList.remove('active');
+            if (pushHistory) {
+                const url = new URL(window.location);
+                url.searchParams.delete('view');
+                history.pushState({}, '', url);
+            }
+        }
+
+        function switchToCalendarView(pushHistory = true) {
+            listView.classList.add('hidden');
+            calendarView.classList.remove('hidden');
+            showCalendarBtn.classList.add('active');
+            showListBtn.classList.remove('active');
+            renderCalendar(currentMonth, currentYear);
+            if (pushHistory) {
+                const url = new URL(window.location);
+                url.searchParams.set('view', 'calendar');
+                history.pushState({}, '', url);
+            }
+        }
+
+        showListBtn.addEventListener('click', () => switchToListView());
+        showCalendarBtn.addEventListener('click', () => switchToCalendarView());
+
+        window.addEventListener('popstate', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('view') === 'calendar') {
+                switchToCalendarView(false);
+            } else {
+                switchToListView(false);
+            }
+        });
+
+        document.getElementById('prev-year').addEventListener('click', () => { currentYear--; renderCalendar(currentMonth, currentYear); });
+        document.getElementById('next-year').addEventListener('click', () => { currentYear++; renderCalendar(currentMonth, currentYear); });
+        document.getElementById('prev-month').addEventListener('click', () => {
+            currentMonth--;
+            if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+            renderCalendar(currentMonth, currentYear);
+        });
+        document.getElementById('next-month').addEventListener('click', () => {
+            currentMonth++;
+            if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+            renderCalendar(currentMonth, currentYear);
+        });
+
+        function renderCalendar(month, year) {
+            calendarBody.innerHTML = '';
+            monthAndYear.innerHTML = `${year}年 ${month + 1}月`;
+            let firstDay = new Date(year, month).getDay();
+            let daysInMonth = 32 - new Date(year, month, 32).getDate();
+            let date = 1;
+            for (let i = 0; i < 6; i++) {
+                let row = document.createElement('tr');
+                for (let j = 0; j < 7; j++) {
+                    let cell = document.createElement('td');
+                    if (i === 0 && j < firstDay) {
+                        // empty
+                    } else if (date > daysInMonth) {
+                        break;
+                    } else {
+                        if (date === today.getDate() && year === today.getFullYear() && month === today.getMonth()) {
+                            cell.classList.add('today');
+                        }
+                        let dayNumber = document.createElement('div');
+                        dayNumber.className = 'day-number';
+                        dayNumber.textContent = date;
+                        cell.appendChild(dayNumber);
+                        const currentDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+                        const dayData = exerciseData.find(d => d.Date === currentDateStr);
+                        if (dayData) {
+                            let dot = document.createElement('div');
+                            dot.className = 'dot';
+                            if (dayData.AllCompleted) {
+                                dot.classList.add('dot-complete');
+                            } else {
+                                dot.classList.add('dot-partial');
+                            }
+                            cell.appendChild(dot);
+                            cell.addEventListener('click', () => {
+                                displayDailyExercises(dayData)
+                                document.getElementById('daily-exercises-display').scrollIntoView({ behavior: 'smooth' });
+                            });
+                        }
+                        date++;
+                    }
+                    row.appendChild(cell);
+                }
+                calendarBody.appendChild(row);
+                if (date > daysInMonth) break;
+            }
+        }
+
+        function displayDailyExercises(dayData) {
+            dailyExercisesDisplay.innerHTML = ''; // Clear previous
+
+            const table = document.createElement('table');
+            table.className = 'daily-exercise-table';
+
+            const thead = document.createElement('thead');
+            thead.innerHTML = `
+                <tr>
+                    <th>类型</th>
+                    <th>时间</th>
+                    <th>详情</th>
+                    <th>操作</th>
+                </tr>
+            `;
+            table.appendChild(thead);
+
+            const tbody = document.createElement('tbody');
+            dayData.Exercises.forEach(exercise => {
+                tbody.appendChild(createExerciseRow(exercise));
+            });
+            table.appendChild(tbody);
+
+            dailyExercisesDisplay.appendChild(table);
+        }
+
+        function createExerciseRow(exercise) {
+            const row = document.createElement('tr');
+
+            const formatTime = (dateString) => {
+                if (!dateString) return '';
+                const d = new Date(dateString);
+                const hours = String(d.getHours()).padStart(2, '0');
+                const minutes = String(d.getMinutes()).padStart(2, '0');
+                const seconds = String(d.getSeconds()).padStart(2, '0');
+                return `${hours}:${minutes}:${seconds}`;
+            };
+
+            let type = '';
+            if (exercise.Type === 1) type = '腹肌';
+            if (exercise.Type === 2) type = '跑步';
+            if (exercise.Type === 3) type = '力量';
+
+            let tsrStatus = '';
+            if (exercise.TSR === 1) {
+                tsrStatus = exercise.TSRVerified ? '✅' : '❌';
+            }
+
+            let details = '';
+            if (exercise.Type === 2 && exercise.Run) {
+                details = `配速: ${exercise.Run.AvgPace} km/h, 耗时: ${exercise.Run.RunDuration}, 距离: ${exercise.Run.Distance} km` + (exercise.Run.RunningWithoutPosition === 1 ? ', 仅计时' : ', 定位' ) ;
+            } else if (exercise.Type === 3 && exercise.SitUpPushUp) {
+                 details = `俯卧撑: ${exercise.SitUpPushUp.PushUp} 个, 仰卧起坐: ${exercise.SitUpPushUp.SitUp} 个, 屈腿卷腹: ${exercise.SitUpPushUp.CurlUp} 个, 靠墙倒立: ${exercise.SitUpPushUp.LegsUpTheWallPose} 个`;
+            }
+
+            row.innerHTML = `
+                <td>${tsrStatus} ${type}</td>
+                <td>${formatTime(exercise.StartAt)} - ${formatTime(exercise.EndAt)}</td>
+                <td>${details}</td>
+                <td>
+                    <a href="/exercise/delete?id=${exercise.id}" class="btn btn-danger btn-sm" onclick="return confirm('确定要删除这条记录吗？')">删除</a>
+                </td>
+            `;
+            return row;
+        }
+
+        // Initial Load
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('view') === 'calendar') {
+            switchToCalendarView(false);
+        } else {
+            switchToListView(false);
+        }
+    });
+</script>
+{{end}}

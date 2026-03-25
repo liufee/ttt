@@ -1,0 +1,469 @@
+{{ define "title" }}微博列表{{ end }}
+{{ define "content" }}
+<style>
+    .page-title {
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 20px;
+        color: #333;
+    }
+
+    .btn {
+        display: inline-block;
+        padding: 10px 15px;
+        text-decoration: none;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        border: none;
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: #0056b3;
+    }
+
+    .weibo-item {
+        border: 1px solid #ddd;
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 5px;
+    }
+    .weibo-title {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    .weibo-meta {
+        color: #666;
+        font-size: 14px;
+        margin-bottom: 10px;
+    }
+    .weibo-content {
+        margin-bottom: 10px;
+    }
+    .weibo-content img{
+        position: relative;
+        top: 4px;
+        height: 20px;
+    }
+    .actions {
+        margin-top: 10px;
+    }
+    .actions a {
+        margin-right: 10px;
+        text-decoration: none;
+        color: #007bff;
+    }
+    .actions a:hover {
+        text-decoration: underline;
+    }
+
+    .filter-form {
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+
+    .filter-form .form-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: end;
+    }
+
+    .filter-form .form-group {
+        display: flex;
+        flex-direction: column;
+        min-width: 150px;
+    }
+
+    .filter-form .form-label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 5px;
+        color: #333;
+        font-size: 14px;
+    }
+
+    .filter-form .form-control {
+        padding: 8px 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+        height: 38px;
+        box-sizing: border-box;
+    }
+
+    .filter-form .form-control.datetime {
+        min-width: 180px;
+    }
+
+    .filter-form .button-group {
+        display: flex;
+        gap: 10px;
+        height: 38px;
+    }
+
+    .filter-form .btn {
+        padding: 8px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        align-self: flex-end;
+        white-space: nowrap;
+        height: 38px;
+        box-sizing: border-box;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .filter-form .btn-search {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .filter-form .btn-search:hover {
+        background-color: #218838;
+    }
+
+    .filter-form .btn-reset {
+        background-color: #6c757d;
+        color: white;
+        text-decoration: none;
+    }
+
+    .filter-form .btn-reset:hover {
+        background-color: #5a6268;
+        text-decoration: none;
+    }
+
+    .filter-form .btn-sort {
+        background-color: #17a2b8;
+        color: white;
+        text-decoration: none;
+    }
+
+    .filter-form .btn-sort:hover {
+        background-color: #138496;
+        text-decoration: none;
+    }
+
+    .filter-form .btn-new {
+        background-color: #007bff;
+        color: white;
+        text-decoration: none;
+    }
+
+    .filter-form .btn-new:hover {
+        background-color: #0056b3;
+        text-decoration: none;
+    }
+
+    .media-container {
+        margin-top: 10px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .media-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 150px;
+    }
+
+    .media-item img,
+    .media-item video {
+        width: 150px;
+        height: 150px;
+        object-fit: cover;
+        border-radius: 5px;
+    }
+
+    /* 音频单独处理 */
+    .media-item audio {
+        width: 150px;
+        height: 40px;  /* 保证可见并可操作 */
+    }
+
+    /* 其他文件占位 */
+    .file-placeholder {
+        width: 150px;
+        height: 150px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border: 2px dashed #ccc;
+        border-radius: 5px;
+        background-color: #f8f9fa;
+        text-align: center;
+        font-size: 12px;
+        padding: 8px;
+        box-sizing: border-box;
+    }
+
+    .file-placeholder div {
+        margin: 2px 0;
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        margin-bottom: 5px;
+    }
+
+    .avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        margin-right: 8px;
+        background-color: #ddd;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: #666;
+        font-size: 12px;
+        overflow: hidden;
+    }
+
+    .avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .user-details {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .username {
+        font-weight: bold;
+        color: #333;
+    }
+
+    .meta-details {
+        font-size: 12px;
+        color: #666;
+    }
+
+    .retweet-container {
+        border-left: 3px solid #007bff;
+        padding-left: 10px;
+        margin-top: 10px;
+        background-color: #f8f9fa;
+    }
+
+    .retweet-header {
+        font-size: 12px;
+        color: #666;
+        margin-bottom: 5px;
+    }
+
+    /* 添加移动端响应式样式 */
+    @media (max-width: 768px) {
+        .weibo-item .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            flex-shrink: 0
+        }
+    }
+</style>
+<div class="page-title">微博列表</div>
+
+<form class="filter-form" method="GET">
+    <div class="form-row">
+        <div class="form-group">
+            <label class="form-label" for="uid">用户</label>
+            <select id="uid" name="uid" class="form-control">
+                <option value="">所有用户</option>
+                {{range .Users}}
+                <option value="{{.ID}}" {{if eq $.Uid .ID}}selected{{end}}>{{.Name}}</option>
+                {{end}}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="keyword">关键词</label>
+            <input type="text" id="keyword" name="keyword" class="form-control" value="{{.Keyword}}" placeholder="请输入搜索关键词">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="start_time">开始时间</label>
+            <input type="datetime-local" id="start_time" name="start_time" class="form-control datetime" value="{{.StartTime}}">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="end_time">结束时间</label>
+            <input type="datetime-local" id="end_time" name="end_time" class="form-control datetime" value="{{.EndTime}}">
+        </div>
+
+        <div class="button-group">
+            <button type="submit" class="btn btn-search">筛选</button>
+            <a href="?sort={{if eq .Sort "desc"}}asc{{else}}desc{{end}}{{if .Uid}}&uid={{.Uid}}{{end}}{{if .Keyword}}&keyword={{.Keyword}}{{end}}{{if .StartTime}}&start_time={{.StartTime}}{{end}}{{if .EndTime}}&end_time={{.EndTime}}{{end}}" class="btn btn-sort">
+                {{if eq .Sort "desc"}}升序{{else}}倒序{{end}}
+            </a>
+            <a href="/weibo/list" class="btn btn-reset">重置</a>
+            <a href="/weibo/new" class="btn btn-new">发布微博</a>
+        </div>
+    </div>
+</form>
+
+{{range .Weibos}}
+<div class="weibo-item">
+    <!-- 修改时间显示格式 -->
+    <div class="weibo-meta">
+        <div class="user-info">
+            <div class="avatar">
+                {{if .User.Avatar}}
+                <img src="/weibo/file?path={{.User.Avatar}}">
+                {{else}}
+                <img src="/weibo/file?path=users/1926576561.gif">
+                {{end}}
+            </div>
+            <div class="user-details">
+                <span class="username">{{.User.Name}}</span>
+                <span class="meta-details">创建时间: {{.Time.Format "2006-01-02 15:04:05"}} | 评论({{.CommentNum}}) | 赞({{.LikeNum}}) | 转发({{.RepostNum}}) | {{.By.Title}} {{ if .Location }} | 📍{{.Location.Address}} {{end}} {{ if eqInt .Type 1 }}| <a target="_blank" href="{{.URL}}"><img style="height: 14px;position: relative; top: 3px" src="/assets?path=weibo/images/emoji/2018new_xinlang_org.png"></a>{{ end }} {{ if eqInt .TSR 1 }}| {{ if .TSRVerified }} ✅通过 {{else}} ❌不通过 {{end}} {{end}} </span>
+            </div>
+        </div>
+    </div>
+    <div class="weibo-content">{{.ContentHTML}}</div>
+
+    {{if .Media}}
+    <div class="media-container">
+        {{range .Media}}
+        <div class="media-item">
+            {{if stringContain .Mime "image/"}}
+            <a href="/weibo/file?path={{.Origin}}" target="_blank">
+                <img src="/weibo/file?path={{.Origin}}" alt="图片">
+            </a>
+            {{else if stringContain .Mime "video/"}}
+            <video controls>
+                <source src="/weibo/file?path={{.Origin}}" type="{{.Mime}}">
+                您的浏览器不支持视频播放。
+            </video>
+            {{else if stringContain .Mime "audio/"}}
+            <audio controls style="width:150px;">
+                <source src="/weibo/file?path={{.Origin}}" type="{{.Mime}}">
+                您的浏览器不支持音频播放。
+            </audio>
+            {{else}}
+            <div class="file-placeholder">
+                <div style="font-size:12px;">{{split .Mime "/" | last }}</div>
+                <div style="font-size:16px;font-weight:bold;margin-top:4px;">
+                    {{if .Origin}}
+                    {{ $ext := split .Origin "." | last }}
+                    {{upper $ext}}
+                    {{else}}
+                    FILE
+                    {{end}}
+                </div>
+                <div style="margin-top:4px;">
+                    <a href="/weibo/file?path={{.Origin}}" download="{{.Origin}}" target="_blank">下载</a>
+                </div>
+            </div>
+            {{end}}
+        </div>
+        {{end}}
+    </div>
+    {{end}}
+
+    <!-- 显示转发的微博 -->
+    {{if .Retweet}}
+    <div class="retweet-container">
+        <div class="retweet-header">转发自:</div>
+        <div class="user-info">
+            <div class="avatar">
+                {{if .Retweet.User.Avatar}}
+                <img src="/weibo/file?path={{.Retweet.User.Avatar}}">
+                {{else}}
+                <img src="/weibo/file?path=users/1926576561.gif">
+                {{end}}
+            </div>
+            <div class="user-details">
+                <span class="username">{{.Retweet.User.Name}}</span>
+                <span class="meta-details">创建时间: {{.Retweet.Time.Format "2006-01-02 15:04:05"}} | 评论({{.Retweet.CommentNum}}) | 赞({{.Retweet.LikeNum}}) | 转发({{.Retweet.RepostNum}}) {{ if .Retweet.Location }} | 📍{{.Retweet.Location.Address}} {{end}} {{ if eqInt .Retweet.Type 1 }}| 来源新浪{{ end }} {{ if eqInt .Retweet.TSR 1 }}| {{ if .Retweet.TSRVerified }} ✅通过 {{else}} ❌不通过 {{end}} {{end}}</span>
+            </div>
+        </div>
+        <div class="weibo-content">{{.Retweet.ContentHTML}}</div>
+
+        {{if .Retweet.Media}}
+        <div class="media-container">
+            {{range .Retweet.Media}}
+            <div class="media-item">
+                {{if stringContain .Mime "image/"}}
+                <a href="/weibo/file?path={{.Origin}}" target="_blank" download="{{.Origin}}">
+                    <img src="/weibo/file?path={{.Origin}}" alt="图片">
+                </a>
+                {{else if stringContain .Mime "video/"}}
+                <video controls>
+                    <source src="/weibo/file?path={{.Origin}}" type="{{.Mime}}">
+                    您的浏览器不支持视频播放。
+                </video>
+                {{else if stringContain .Mime "audio/"}}
+                <audio controls>
+                    <source src="/weibo/file?path={{.Origin}}" type="{{.Mime}}">
+                    您的浏览器不支持音频播放。
+                </audio>
+                {{else}}
+                <div class="file-placeholder">
+                    <div style="font-size:12px;">{{split .Mime "/" | last}}</div>
+                    <div style="font-size:16px;font-weight:bold;margin-top:4px;">
+                        {{if .Origin}}
+                        {{ $ext := split .Origin "." | last }}
+                        {{upper $ext}}
+                        {{else}}
+                        FILE
+                        {{end}}
+                    </div>
+                    <div style="margin-top:4px;">
+                        <a href="/weibo/file?path={{.Origin}}" download="{{.Origin}}" target="_blank">下载</a>
+                    </div>
+                </div>
+                {{end}}
+            </div>
+            {{end}}
+        </div>
+        {{end}}
+
+        <div class="actions">
+            <a href="/weibo/view?id={{.Retweet.ID}}">查看原微博</a>
+        </div>
+    </div>
+    {{end}}
+
+    <div class="actions">
+        <a href="/weibo/view?id={{.ID}}">查看</a>
+        <a href="/weibo/delete?id={{.ID}}" onclick="return confirm('确定要删除这条微博吗？')">删除</a>
+    </div>
+</div>
+{{else}}
+<p>暂无微博内容</p>
+{{end}}
+
+<div class="pagination">
+    {{if gt .Page 1}}
+    <!-- 在分页链接中添加筛选参数 -->
+    <a href="?page={{sub .Page 1}}&per_page={{.PerPage}}{{if .Uid}}&uid={{.Uid}}{{end}}{{if .Keyword}}&keyword={{.Keyword}}{{end}}{{if .StartTime}}&start_time={{.StartTime}}{{end}}{{if .EndTime}}&end_time={{.EndTime}}{{end}}{{if .Sort}}&sort={{.Sort}}{{end}}">&laquo; 上一页</a>
+    {{end}}
+
+    <span>第 {{.Page}} 页，共 {{.TotalPages}} 页 (共 {{.Total}} 条记录)</span>
+
+    {{if lt .Page .TotalPages}}
+    <!-- 在分页链接中添加筛选参数 -->
+    <a href="?page={{add .Page 1}}&per_page={{.PerPage}}{{if .Uid}}&uid={{.Uid}}{{end}}{{if .Keyword}}&keyword={{.Keyword}}{{end}}{{if .StartTime}}&start_time={{.StartTime}}{{end}}{{if .EndTime}}&end_time={{.EndTime}}{{end}}{{if .Sort}}&sort={{.Sort}}{{end}}">下一页 &raquo;</a>
+    {{end}}
+</div>
+{{ end }}

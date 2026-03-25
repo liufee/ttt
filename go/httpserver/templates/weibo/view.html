@@ -1,0 +1,953 @@
+{{define "title"}}查看微博{{end}}
+
+{{define "content"}}
+<style>
+    body {
+        font-family: Arial, sans-serif;
+    }
+    .weibo-content {
+        border: 1px solid #ddd;
+        padding: 20px;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+    }
+    .weibo-meta {
+        color: #666;
+        font-size: 14px;
+        margin-bottom: 20px;
+    }
+    .back-link {
+        display: inline-block;
+        margin-bottom: 20px;
+        color: #007bff;
+        text-decoration: none;
+    }
+    .back-link:hover {
+        text-decoration: underline;
+    }
+    .actions {
+        margin-top: 20px;
+    }
+    .actions a {
+        margin-right: 10px;
+        text-decoration: none;
+        color: #007bff;
+    }
+    .actions a:hover {
+        text-decoration: underline;
+    }
+
+    /* ===== emoji ===== */
+
+    .editor-toolbar{
+        margin-top:10px;
+        display:flex;
+        gap:10px;
+        align-items:center;
+    }
+
+    .tool-btn{
+        padding:6px 12px;
+        border:1px solid #ddd;
+        border-radius:16px;
+        background:#fff;
+        cursor:pointer;
+    }
+
+    .emoji-panel{
+        display:none;
+        margin-top:10px;
+        border:1px solid #ddd;
+        border-radius:6px;
+        padding:8px;
+        background:#fff;
+    }
+
+    .emoji-grid{
+        display:grid;
+        grid-template-columns:repeat(8,1fr);
+        gap:6px;
+    }
+
+    .emoji-item{
+        cursor:pointer;
+        text-align:center;
+    }
+
+    .emoji-item img{
+        width:24px;
+        height:24px;
+    }
+
+    /* ===== location ===== */
+
+    .location-bar{
+        margin-top:8px;
+        font-size:14px;
+        display:none;
+        align-items:center;
+        gap:6px;
+    }
+
+    .location-text{
+        color:#007bff;
+    }
+
+    .loc-btn{
+        border:none;
+        background:#eee;
+        padding:2px 6px;
+        border-radius:4px;
+        cursor:pointer;
+    }
+
+    .location-input{
+        border:1px solid #ddd;
+        padding:4px 6px;
+        border-radius:4px;
+    }
+
+    previewContainer {
+        border: 1px solid #ddd;
+        padding: 15px;
+        margin: 20px 0;
+        border-radius: 5px;
+        background-color: #f8f9fa;
+    }
+
+    .preview-title {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 15px;
+        color: #333;
+    }
+
+    .preview-item {
+        display: inline-block;
+        margin: 10px;
+        position: relative;
+        vertical-align: top;
+    }
+
+    .preview-item img, .preview-item video {
+        width: 150px;
+        height: 150px;
+        object-fit: cover;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .preview-item .file-info {
+        font-size: 12px;
+        margin-top: 5px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 150px;
+        text-align: center;
+    }
+
+    .preview-item .remove-btn {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background: #ff4d4f;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .preview-item .file-placeholder {
+        width: 150px;
+        height: 150px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border: 2px dashed #ddd;
+        border-radius: 8px;
+        background-color: #f8f9fa;
+        font-size: 14px;
+        text-align: center;
+        padding: 10px;
+    }
+
+    .media-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    /* 每个媒体项统一尺寸 */
+    .media-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 150px; /* 固定宽度 */
+    }
+
+    /* 图片 */
+    .media-item img {
+        width: 150px;
+        height: 150px;
+        object-fit: cover;
+        border-radius: 5px;
+    }
+
+    /* 视频 */
+    .media-item video {
+        width: 150px;
+        height: 150px;
+        object-fit: cover;
+        border-radius: 5px;
+    }
+
+    /* 音频 */
+    .media-item audio {
+        width: 150px;
+        height: 40px; /* 保证可见 */
+    }
+
+    /* 文件占位 */
+    .media-item .file-placeholder {
+        width: 150px;
+        height: 150px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border: 2px dashed #ccc;
+        border-radius: 5px;
+        background-color: #f8f9fa;
+        text-align: center;
+        font-size: 12px;
+        padding: 8px;
+        box-sizing: border-box;
+    }
+    .media-item .file-placeholder div {
+        margin: 2px 0;
+    }
+
+    /* 转发微博容器 */
+    .retweet-container .media-container {
+        margin-top: 10px;
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        margin-bottom: 5px;
+    }
+
+    .avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        margin-right: 8px;
+        background-color: #ddd;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: #666;
+        font-size: 12px;
+        overflow: hidden;
+    }
+
+    .avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .user-details {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .username {
+        font-weight: bold;
+        color: #333;
+    }
+
+    .meta-details {
+        font-size: 12px;
+        color: #666;
+    }
+
+    /* 评论相关样式 */
+    .comments-section {
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #eee;
+    }
+
+    .comments-title {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 15px;
+        color: #333;
+    }
+
+    .comment-item {
+        padding: 10px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .comment-item:last-child {
+        border-bottom: none;
+    }
+
+    .comment-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 5px;
+    }
+
+    .comment-user {
+        font-weight: bold;
+        font-size: 14px;
+        color: #333;
+        margin-right: 8px;
+    }
+
+    .comment-tsr-verified{
+        font-size: 12px;
+    }
+
+    .comment-time {
+        font-size: 12px;
+        color: #999;
+        margin-left: 5px;
+    }
+
+    .comment-content {
+        font-size: 14px;
+        color: #333;
+        line-height: 1.5;
+        margin-left: 32px;
+    }
+
+    .reply-to {
+        font-size: 12px;
+        color: #666;
+        background-color: #f5f5f5;
+        padding: 5px 10px;
+        border-radius: 4px;
+        margin: 5px 0 5px 32px;
+    }
+
+    .reply-to .reply-user {
+        font-weight: bold;
+        color: #007bff;
+    }
+
+    .retweet-container {
+        border-left: 3px solid #007bff;
+        margin-top: 20px;
+        background-color: #f8f9fa;
+        padding: 15px;
+    }
+
+    .retweet-header {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 10px;
+        font-weight: bold;
+    }
+
+    /* 评论表单样式 */
+    .comment-form {
+        margin-top: 20px;
+        padding: 15px;
+        border: 1px solid #eee;
+        border-radius: 5px;
+        background-color: #fafafa;
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+    }
+
+    .form-group textarea {
+        width: 100%;
+        min-height: 80px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        resize: vertical;
+    }
+
+    .form-group select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+
+    .form-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .form-actions button {
+        padding: 10px 20px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .form-actions button:hover {
+        background-color: #0056b3;
+    }
+
+    .form-actions .checkbox {
+        display: flex;
+        align-items: center;
+    }
+
+    .form-actions .checkbox input {
+        margin-right: 5px;
+    }
+
+    /* 转发表单样式 */
+    .retweet-form {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 80%;
+        max-width: 500px;
+        max-height: 80vh;      /* 限制高度 */
+        overflow-y: auto;      /* 内容过多可滚动 */
+        background: #fff;
+        padding: 20px;
+        border-radius: 5px;
+        box-sizing: border-box;
+    }
+
+    .comment-media-container {
+        margin-left: 32px;
+        margin-top: 8px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .comment-media-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 120px;       /* 统一宽度 */
+    }
+
+    /* 图片 */
+    .comment-media-item img {
+        width: 120px;
+        height: 120px;
+        object-fit: cover;
+        border-radius: 5px;
+    }
+
+    /* 视频 */
+    .comment-media-item video {
+        width: 120px;
+        height: 80px;
+        border-radius: 5px;
+    }
+
+    /* 音频 */
+    .comment-media-item audio {
+        width: 120px;
+        height: 40px;
+    }
+
+    /* 其他文件占位 */
+    .comment-media-item .file-placeholder {
+        width: 120px;
+        height: 80px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border: 2px dashed #ccc;
+        border-radius: 5px;
+        background-color: #f8f9fa;
+        text-align: center;
+        font-size: 12px;
+        padding: 6px;
+        box-sizing: border-box;
+    }
+
+    .comment-media-item .file-placeholder div {
+        margin: 2px 0;
+        line-height: 1;
+    }
+
+    .comment-location {
+        font-size: 11px;
+        color: #888;
+        margin-top: 2px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    @media (max-width: 768px) {
+        .weibo-content {
+            padding: 15px;
+        }
+
+        .weibo-content .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            flex-shrink: 0
+        }
+    }
+</style>
+
+<div class="container">
+    <a href="/weibo/list" class="back-link">&larr; 返回列表</a>
+
+    <h1>微博详情</h1>
+
+    <div class="weibo-content">
+        <!-- 修改时间显示格式 -->
+        <div class="weibo-meta">
+            <div class="user-info">
+                <div class="avatar">
+                    {{if $.Weibo.User.Avatar}}
+                    <img src="/weibo/file?path={{$.Weibo.User.Avatar}}">
+                    {{else}}
+                    <img src="/weibo/file?path=users/1926576561.gif">
+                    {{end}}
+                </div>
+                <div class="user-details">
+                    <span class="username">{{$.Weibo.User.Name}}</span>
+                    <span class="meta-details">创建时间: {{$.Weibo.Time.Format "2006-01-02 15:04:05"}} | 评论({{$.Weibo.CommentNum}}) | 赞({{$.Weibo.LikeNum}}) | 转发({{$.Weibo.RepostNum}}) | {{$.Weibo.By.Title}} {{ if $.Weibo.Location }} | 📍{{$.Weibo.Location.Address}} {{end}} {{ if eqInt $.Weibo.Type 1 }}| <a target="_blank" href="{{$.Weibo.URL}}"><img style="height: 14px;position: relative; top: 3px" src="/assets?path=weibo/images/emoji/2018new_xinlang_org.png"></a>{{ end }} {{ if eqInt $.Weibo.TSR 1 }}| {{ if $.Weibo.TSRVerified }} ✅通过 {{else}} ❌不通过 {{end}} {{end}}</span>
+                </div>
+            </div>
+        </div>
+        <p>{{$.Weibo.ContentHTML}}</p>
+
+        {{if $.Weibo.Media}}
+        <div class="media-container">
+            {{range $.Weibo.Media}}
+            <div class="media-item">
+                {{if stringContain .Mime "image/"}}
+                <a href="/weibo/file?path={{.Origin}}" download="{{.Origin}}" target="_blank">
+                    <img src="/weibo/file?path={{.Origin}}" alt="图片">
+                </a>
+                {{else if stringContain .Mime "video/"}}
+                <video controls>
+                    <source src="/weibo/file?path={{.Origin}}" type="{{.Mime}}">
+                    您的浏览器不支持视频播放。
+                </video>
+                {{else if stringContain .Mime "audio/"}}
+                <audio controls>
+                    <source src="/weibo/file?path={{.Origin}}" type="{{.Mime}}">
+                    您的浏览器不支持音频播放。
+                </audio>
+                {{else}}
+                <div class="file-placeholder">
+                    <div style="font-size:12px;">{{split .Mime "/" | last }}</div>
+                    <div style="font-size:16px;font-weight:bold;margin-top:4px;">
+                        {{ if .Origin }}
+                        {{ $ext := split .Origin "." | last }}
+                        {{upper $ext}}
+                        {{else}}
+                        FILE
+                        {{end}}
+                    </div>
+                    <div style="margin-top:4px;">
+                        <a href="/weibo/file?path={{.Origin}}" download="{{.Origin}}" target="_blank">下载</a>
+                    </div>
+                </div>
+                {{end}}
+            </div>
+            {{end}}
+        </div>
+        {{end}}
+
+        <!-- 显示转发的微博 -->
+        {{if $.Weibo.Retweet}}
+        <div class="retweet-container">
+            <div class="retweet-header">转发自:</div>
+            <div class="user-info">
+                <div class="avatar">
+                    {{if $.Weibo.Retweet.User.Avatar}}
+                    <img src="/weibo/file?path={{$.Weibo.Retweet.User.Avatar}}">
+                    {{else}}
+                    <img src="/weibo/file?path=users/1926576561.gif">
+                    {{end}}
+                </div>
+                <div class="user-details">
+                    <span class="username">{{$.Weibo.Retweet.User.Name}}</span>
+                    <span class="meta-details">创建时间: {{$.Weibo.Retweet.Time.Format "2006-01-02 15:04:05"}} | 评论({{$.Weibo.Retweet.CommentNum}}) | 赞({{$.Weibo.Retweet.LikeNum}}) | 转发({{$.Weibo.Retweet.RepostNum}}) {{ if $.Weibo.Retweet.Location }} | 📍{{$.Weibo.Retweet.Location.Address}} {{end}} {{ if eqInt $.Weibo.Retweet.Type 1 }}| 来源新浪{{ end }} {{ if eqInt $.Weibo.Retweet.TSR 1 }}| {{ if $.Weibo.Retweet.TSRVerified }} ✅通过 {{else}} ❌不通过 {{end}} {{end}}</span>
+                </div>
+            </div>
+            <p>{{$.Weibo.Retweet.ContentHTML}}</p>
+
+            {{if $.Weibo.Retweet.Media}}
+            <div class="media-container">
+                {{range $.Weibo.Retweet.Media}}
+                <div class="media-item">
+                    {{if stringContain .Mime "image/"}}
+                    <a href="/weibo/file?path={{.Origin}}" download="{{.Origin}}" target="_blank">
+                        <img src="/weibo/file?path={{.Origin}}" alt="图片">
+                    </a>
+                    {{else if stringContain .Mime "video/"}}
+                    <video controls>
+                        <source src="/weibo/file?path={{.Origin}}" type="{{.Mime}}">
+                        您的浏览器不支持视频播放。
+                    </video>
+                    {{else if stringContain .Mime "audio/"}}
+                    <audio controls>
+                        <source src="/weibo/file?path={{.Origin}}" type="{{.Mime}}">
+                        您的浏览器不支持音频播放。
+                    </audio>
+                    {{else}}
+                    <div class="file-placeholder">
+                        <div style="font-size:12px;">{{split .Mime "/" | last }}</div>
+                        <div style="font-size:16px;font-weight:bold;margin-top:4px;">
+                            {{ if .Origin }}
+                            {{ $ext := split .Origin "." | last }}
+                            {{upper $ext}}
+                            {{else}}
+                            FILE
+                            {{end}}
+                        </div>
+                        <div style="margin-top:4px;">
+                            <a href="/weibo/file?path={{.Origin}}" download="{{.Origin}}" target="_blank">下载</a>
+                        </div>
+                    </div>
+                    {{end}}
+                </div>
+                {{end}}
+            </div>
+            {{end}}
+
+            <div class="actions">
+                <a href="/weibo/view?id={{$.Weibo.Retweet.ID}}">查看原微博</a>
+            </div>
+        </div>
+        {{end}}
+    </div>
+
+    <div class="actions">
+        <button style="background-color: #fff; border: 1px solid #ccc; color: #666; padding: 5px 10px; border-radius: 3px; cursor: pointer;" onclick="if(confirm('确定要删除这条微博吗？')) location.href='/weibo/delete?id={{$.Weibo.ID}}'">删除</button>
+        <button id="showRetweetForm" style="background-color: #fff; border: 1px solid #ccc; color: #666; padding: 5px 10px; border-radius: 3px; cursor: pointer;">
+            转发
+        </button>
+    </div>
+
+    <!-- 评论表单 -->
+    <div class="comment-form">
+        <h3>发表评论</h3>
+        <form id="commentForm" action="/weibo/comment" method="post" enctype="multipart/form-data">
+            <input type="hidden" name="feed_id" value="{{$.Weibo.ID}}">
+
+            <div class="form-group">
+                <label for="uid">选择用户:</label>
+                <select name="uid" id="uid" required>
+                    {{range $.Users}}
+                    <option value="{{.ID}}">{{.Name}}</option>
+                    {{end}}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="content">评论内容:</label>
+                <textarea name="content" id="content" placeholder="请输入评论内容"></textarea>
+                <div class="editor-toolbar">
+                    <button type="button" id="commentEmojiBtn" class="tool-btn">😀 表情</button>
+                    <button type="button" id="commentLocationBtn" class="tool-btn">📍定位</button>
+                </div>
+
+                <div id="commentEmojiPanel" class="emoji-panel">
+                    <div id="commentEmojiGrid" class="emoji-grid"></div>
+                </div>
+
+                <div id="commentLocationBar" class="location-bar">
+
+                    <span id="commentLocationText" class="location-text"></span>
+
+                    <button type="button" id="commentLocationEdit" class="loc-btn">✎</button>
+                    <button type="button" id="commentLocationDelete" class="loc-btn">×</button>
+
+                    <div id="commentLocationEditor" style="display:none">
+                        <input id="commentLocationInput" class="location-input">
+                        <button type="button" id="commentLocationSave" class="loc-btn">✔</button>
+                        <button type="button" id="commentLocationCancel" class="loc-btn">✖</button>
+                    </div>
+
+                </div>
+                <input type="hidden" id="commentLatitude" name="latitude">
+                <input type="hidden" id="commentLongitude" name="longitude">
+                <input type="hidden" id="commentAddress" name="address">
+            </div>
+
+            <div class="form-group">
+                <label for="comment_media" class="form-label">上传文件</label>
+                <input type="file" id="comment_media" name="media" class="form-control" multiple accept="*/*">
+                <div class="form-text">可选择多个文件，支持图片和视频</div>
+            </div>
+
+            <div id="commentPreviewContainer" class="previewContainer">
+                <div class="preview-title">文件预览</div>
+                <div class="preview-area">
+                    <!-- 预览将在这里显示 -->
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <div class="checkbox">
+                    <input type="checkbox" name="retweet" id="retweet" value="1">
+                    <label for="retweet">同时转发</label>
+                </div>
+                <button id="commentSubmit" type="submit">发表评论</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="retweetModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1000;">
+        <div class="retweet-form" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; max-width: 500px; background: #fff; padding: 20px; border-radius: 5px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0;">转发微博</h3>
+                <button id="closeRetweetForm" style="background: none; border: none; font-size: 20px; cursor: pointer;">&times;</button>
+            </div>
+            <form id="retweetForm" action="/weibo/retweet" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="feed_id" value="{{$.Weibo.ID}}">
+
+                <div class="form-group">
+                    <label for="retweet_uid">选择用户:</label>
+                    <select name="uid" id="retweet_uid" required>
+                        {{range $.Users}}
+                        <option value="{{.ID}}">{{.Name}}</option>
+                        {{end}}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="retweet_content">转发内容:</label>
+                    <textarea name="content" id="retweet_content" placeholder="请输入转发内容（可选）"></textarea>
+                    <div class="editor-toolbar">
+                        <button type="button" id="retweetEmojiBtn" class="tool-btn">😀 表情</button>
+                        <button type="button" id="retweetLocationBtn" class="tool-btn">📍定位</button>
+                    </div>
+
+                    <div id="retweetEmojiPanel" class="emoji-panel">
+                        <div id="retweetEmojiGrid" class="emoji-grid"></div>
+                    </div>
+
+                    <div id="retweetLocationBar" class="location-bar">
+
+                        <span id="retweetLocationText" class="location-text"></span>
+
+                        <button type="button" id="retweetLocationEdit" class="loc-btn">✎</button>
+                        <button type="button" id="retweetLocationDelete" class="loc-btn">×</button>
+
+                        <div id="retweetLocationEditor" style="display:none">
+                            <input id="retweetLocationInput" class="location-input">
+                            <button type="button" id="retweetLocationSave" class="loc-btn">✔</button>
+                            <button type="button" id="retweetLocationCancel" class="loc-btn">✖</button>
+                        </div>
+
+                    </div>
+                    <input type="hidden" id="retweetLatitude" name="latitude">
+                    <input type="hidden" id="retweetLongitude" name="longitude">
+                    <input type="hidden" id="retweetAddress" name="address">
+                </div>
+
+                <div class="form-group">
+                    <label for="retweet_media" class="form-label">上传文件</label>
+                    <input type="file" id="retweet_media" name="media" class="form-control" multiple accept="*/*">
+                    <div class="form-text">可选择多个文件，支持图片和视频</div>
+                </div>
+
+                <div id="retweetPreviewContainer">
+                    <div class="preview-title">文件预览</div>
+                    <div class="preview-area">
+                        <!-- 预览将在这里显示 -->
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <div class="checkbox">
+                        <input type="checkbox" name="comment" id="comment" value="1">
+                        <label for="comment">同时评论</label>
+                    </div>
+                    <button id="retweetSubmit" type="submit">转发微博</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 评论列表 -->
+    <div class="comments-section">
+        <div class="comments-title">评论 ({{len $.Comments}})</div>
+        {{if $.Comments}}
+        {{range $.Comments}}
+        <div class="comment-item">
+            <div class="comment-header">
+                <div class="avatar">
+                    {{if .User.Avatar}}
+                    <img src="/weibo/file?path={{.User.Avatar}}">
+                    {{else}}
+                    <img src="/weibo/file?path=users/1926576561.gif">
+                    {{end}}
+                </div>
+
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <div class="comment-user">{{.User.Name}}</div>
+                        </div>
+                        {{ if eqInt .TSR 1 }}
+                        <div class="comment-tsr-verified">
+                            {{ if .TSRVerified }} ✅通过 {{else}} ❌不通过 {{end }}
+                        </div>
+                        {{end}}
+                        <div class="comment-time">
+                            {{.Time.Format "2006-01-02 15:04:05"}}
+                            <button style="background-color: #fff; border: 1px solid #ccc; color: #666; padding: 3px 8px; border-radius: 3px; cursor: pointer; font-size: 12px;" onclick="if(confirm('确定要删除这条评论吗？')) location.href='/weibo/delete-comment?id={{.ID}}&feed_id={{$.Weibo.ID}}'">删除评论</button>
+                        </div>
+                    </div>
+
+                    {{if .Location}}
+                    {{if .Location.Address}}
+                    <div class="comment-location">📍{{.Location.Address}}</div>
+                    {{end}}
+                    {{end}}
+                </div>
+            </div>
+
+            {{if and .ReplyTo (ne .ReplyTo.ID "0")}}
+            <div class="reply-to">
+                <span class="reply-user">{{.ReplyTo.User.Name}}</span> {{.ReplyTo.ContentHTML}}
+            </div>
+            {{end}}
+
+            <div class="comment-content">{{.ContentHTML}}</div>
+
+            {{if .Media}}
+            <div class="comment-media-container">
+                {{range .Media}}
+                <div class="comment-media-item">
+                    {{if stringContain .Mime "image/"}}
+                    <a href="/weibo/file?path={{.Origin}}" target="_blank">
+                        <img src="/weibo/file?path={{.Origin}}">
+                    </a>
+                    {{else if stringContain .Mime "video/"}}
+                    <video controls>
+                        <source src="/weibo/file?path={{.Origin}}" type="{{.Mime}}">
+                        您的浏览器不支持视频播放。
+                    </video>
+                    {{else if stringContain .Mime "audio/"}}
+                    <audio controls>
+                        <source src="/weibo/file?path={{.Origin}}" type="{{.Mime}}">
+                        您的浏览器不支持音频播放。
+                    </audio>
+                    {{else}}
+                    <div class="file-placeholder">
+                        <div style="font-size:12px;">
+                            {{ if .Mime }}
+                            {{split .Mime "/" | last }}
+                            {{else}}
+                            file
+                            {{end}}
+                        </div>
+                        <div style="font-size:16px;font-weight:bold;margin-top:4px;">
+                            {{ if .Origin }}
+                            {{ $ext := split .Origin "." | last }}
+                            {{upper $ext}}
+                            {{else}}
+                            FILE
+                            {{end}}
+                        </div>
+                        <div style="margin-top:4px;">
+                            <a href="/weibo/file?path={{.Origin}}" download="{{.Origin}}" target="_blank">下载</a>
+                        </div>
+                    </div>
+                    {{end}}
+                </div>
+                {{end}}
+            </div>
+            {{end}}
+        </div>
+        {{end}}
+        {{else}}
+        <p>暂无评论</p>
+        {{end}}
+    </div>
+</div>
+<script src="/assets?path=weibo/js/emoji.js"></script>
+<script src="/assets?path=weibo/js/common.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const showRetweetFormBtn = document.getElementById('showRetweetForm');
+        const retweetModal = document.getElementById('retweetModal');
+        const closeRetweetFormBtn = document.getElementById('closeRetweetForm');
+
+        // 显示转发表单
+        if (showRetweetFormBtn) {
+            showRetweetFormBtn.addEventListener('click', function() {
+                if (retweetModal) {
+                    retweetModal.style.display = 'block';
+                }
+            });
+        }
+
+        // 隐藏转发表单
+        if (closeRetweetFormBtn) {
+            closeRetweetFormBtn.addEventListener('click', function() {
+                if (retweetModal) {
+                    retweetModal.style.display = 'none';
+                }
+            });
+        }
+
+        // 点击模态框背景关闭表单
+        if (retweetModal) {
+            retweetModal.addEventListener('click', function (e) {
+                if (e.target === retweetModal) {
+                    retweetModal.style.display = 'none';
+                }
+            });
+        }
+
+        common.init({amapWebKey:'{{.AmapWebKey}}'});
+
+        const getCommentFiles = common.initFilePreview('comment_media', 'commentPreviewContainer');
+        common.initEmoji('commentEmojiBtn','commentEmojiPanel','commentEmojiGrid','content', Emojis);
+        common.initLocation('commentLocationBtn','commentLocationBar','commentLocationText','commentLatitude','commentLongitude','commentAddress', 'commentLocationDelete', 'commentLocationEdit', 'commentLocationEditor', 'commentLocationInput', 'commentLocationSave', 'commentLocationCancel');
+        common.initFormSubmit('commentForm','commentSubmit', getCommentFiles, '/weibo/comment');
+
+        const getRetweetFiles = common.initFilePreview('retweet_media', 'retweetPreviewContainer');
+        common.initEmoji('retweetEmojiBtn','retweetEmojiPanel','retweetEmojiGrid','retweet_content', Emojis);
+        common.initLocation('retweetLocationBtn','retweetLocationBar','retweetLocationText','retweetLatitude','retweetLongitude','retweetAddress', 'retweetLocationDelete', 'retweetLocationEdit', 'retweetLocationEditor', 'retweetLocationInput', 'retweetLocationSave', 'retweetLocationCancel');
+        common.initFormSubmit('retweetForm','retweetSubmit', getRetweetFiles, '/weibo/retweet');
+    });
+</script>
+{{end}}

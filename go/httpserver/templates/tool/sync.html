@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>信息同步</title>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      margin: 0;
+      padding: 10px;
+      overflow: hidden; /* 固定页面，防止滚动 */
+    }
+    .container {
+      width: 100%;
+      max-width: 1000px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      padding: 20px;
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h2 {
+      color: #4a90e2;
+      margin: 10px 0;
+      text-align: center;
+      font-size: 28px;
+    }
+    #messages {
+      width: 100%;
+      border: none;
+      background: #fff;
+      padding: 15px;
+      height: 69vh;
+      overflow-y: auto;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+    }
+    .message {
+      padding: 12px;
+      margin: 8px 0;
+      border-radius: 5px;
+      word-wrap: break-word;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      max-width: 80%;
+      animation: fadeIn 0.3s ease-in;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .message.sent {
+      background: #e3f2fd;
+      align-self: flex-end;
+      border-top-right-radius: 0;
+    }
+    .message.received {
+      background: #f5f5f5;
+      align-self: flex-start;
+      border-top-left-radius: 0;
+    }
+    .message-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 5px;
+    }
+    .message-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .text-message {
+      flex: 1;
+      white-space: pre-wrap;
+    }
+    .file-message {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+    }
+    .file-info {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .file-preview {
+      max-width: 100px;
+      max-height: 100px;
+      margin-right: 10px;
+      border-radius: 5px;
+    }
+    .file-details {
+      flex: 1;
+    }
+    .progress-container {
+      width: 100%;
+      background-color: #f0f0f0;
+      border-radius: 5px;
+      margin-top: 5px;
+      height: 10px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      background-color: #4a90e2;
+      width: 0%;
+      transition: width 0.3s;
+    }
+    .progress-text {
+      font-size: 12px;
+      color: #666;
+      margin-top: 3px;
+    }
+    .input-container {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      gap: 10px;
+    }
+    .input-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    input[type="text"] {
+      flex: 1;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      outline: none;
+      font-size: 16px;
+    }
+    button {
+      background: #4a90e2;
+      color: white;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      border: none;
+      font-weight: bold;
+      padding: 12px 20px;
+      border-radius: 5px;
+      outline: none;
+      font-size: 16px;
+    }
+    button:hover {
+      background: #357abd;
+    }
+    button:disabled {
+      background: #cccccc;
+      cursor: not-allowed;
+    }
+    .file-input-container {
+      position: relative;
+      display: inline-block;
+    }
+    .file-input-container input[type="file"] {
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+    .file-input-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #28a745;
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 20px;
+    }
+    .file-input-button:hover {
+      background: #218838;
+    }
+    .download-btn, .preview-btn, .copy-btn {
+      background: #28a745;
+      border: none;
+      padding: 8px 12px;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-left: 10px;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .preview-btn {
+      background: #17a2b8;
+    }
+    .copy-btn {
+      background: #ffc107;
+      color: #212529;
+    }
+    .download-btn:hover {
+      background: #218838;
+    }
+    .preview-btn:hover {
+      background: #138496;
+    }
+    .copy-btn:hover {
+      background: #e0a800;
+    }
+    img, video {
+      max-width: 100px;
+      border-radius: 5px;
+    }
+    .status-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      width: 100%;
+      padding: 5px 0;
+      font-size: 14px;
+    }
+    .connection-status {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(255, 255, 255, 0.3);
+      padding: 5px 10px;
+      border-radius: 15px;
+    }
+    .status-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .status-connected {
+      background-color: #28a745;
+    }
+    .status-disconnected {
+      background-color: #dc3545;
+    }
+    #loading {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 20px 30px;
+      border-radius: 8px;
+      font-size: 18px;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      z-index: 1000;
+    }
+    .spinner {
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top: 4px solid #fff;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 10px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .file-transfer-progress {
+      width: 100%;
+      background-color: #e9ecef;
+      border-radius: 5px;
+      margin: 10px 0;
+      overflow: hidden;
+    }
+    .file-transfer-progress-bar {
+      height: 20px;
+      background-color: #4a90e2;
+      width: 0%;
+      transition: width 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 12px;
+    }
+    .message.file-transfer {
+      background: #e9f7ef;
+    }
+    .file-transfer-info {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
+    }
+    .file-transfer-name {
+      font-weight: bold;
+    }
+    .file-transfer-status {
+      font-size: 12px;
+      color: #666;
+    }
+
+    /* 新增样式 */
+    .message.sent .file-transfer-status {
+      color: #007bff;
+    }
+
+    .message.received .file-transfer-status {
+      color: #28a745;
+    }
+
+    .header-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+
+    .title {
+      margin: 0;
+    }
+
+    .file-size {
+      font-size: 12px;
+      color: #666;
+      margin-top: 3px;
+    }
+
+    .message-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 8px;
+      gap: 5px;
+    }
+
+    /* 修改: 下载按钮中的文件大小样式 */
+    .download-btn-container {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .download-btn-with-size {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #28a745;
+      border: none;
+      padding: 8px 12px;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer; /* 添加手型光标 */
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .file-size-indicator {
+      font-size: 12px;
+      font-weight: normal;
+      color: #e0e0e0;
+      background-color: rgba(0, 0, 0, 0.2);
+      padding: 2px 6px;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+<div id="loading">
+  <div class="spinner"></div>
+  <div id="loading-text">正在发送...</div>
+</div>
+
+<!-- 恢复原来的结构 -->
+<div class="container">
+  <div class="header-container">
+    <h2 class="title">📡 实时信息同步</h2>
+    <div class="connection-status">
+      <span class="status-indicator status-disconnected" id="status-indicator"></span>
+      <span id="connection-status">连接中...</span>
+    </div>
+  </div>
+
+  <div id="messages"></div>
+
+  <div class="input-container">
+    <div class="input-row">
+      <div class="file-input-container">
+        <div class="file-input-button">📁</div>
+        <input type="file" id="fileInput">
+      </div>
+      <input type="text" id="message" placeholder="输入信息...">
+      <button onclick="sendMessage()">发送</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.getElementById("message").addEventListener("keydown", function(event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      sendMessage();
+    }
+  });
+
+  // 文件选择后自动发送
+  document.getElementById("fileInput").addEventListener("change", function() {
+    if (this.files.length > 0) {
+      sendFile();
+    }
+  });
+
+  let ws;
+  let reconnectInterval = 3000;
+  let isConnected = false;
+  let receiveBuffer = "";
+  let fileChunks = {};
+  let fileProgress = {};
+  let currentFile = null;
+  let chunkSize = 16 * 1024; // 16KB per chunk
+  let currentChunk = 0;
+  let totalChunks = 0;
+  let fileId = "";
+  let sendingFile = false;
+  let myMessages = new Set(); // 记录自己发送的消息
+
+  function updateConnectionStatus(connected) {
+    isConnected = connected;
+    const indicator = document.getElementById("status-indicator");
+    const statusText = document.getElementById("connection-status");
+
+    if (connected) {
+      indicator.className = "status-indicator status-connected";
+      statusText.textContent = "已连接";
+    } else {
+      indicator.className = "status-indicator status-disconnected";
+      statusText.textContent = "已断开";
+    }
+  }
+
+  function createWebSocket() {
+    const host = window.location.host;
+    ws = new WebSocket(`${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${host}/tool/sync/ws`);
+
+    ws.onopen = function() {
+      console.log("WebSocket 连接已建立");
+      updateConnectionStatus(true);
+    };
+
+    ws.onerror = function(error) {
+      console.error("WebSocket 错误:", error);
+      updateConnectionStatus(false);
+    };
+
+    ws.onclose = function() {
+      console.log("WebSocket 连接已关闭，正在尝试重连...");
+      updateConnectionStatus(false);
+      setTimeout(createWebSocket, reconnectInterval);
+    };
+
+    ws.onmessage = function (event) {
+      receiveBuffer += event.data;
+
+      // 检查是否完整
+      while (receiveBuffer.includes("\\\\END///")) {
+        const endIndex = receiveBuffer.indexOf("\\\\END///");
+        const completeMessage = receiveBuffer.slice(0, endIndex);
+        receiveBuffer = receiveBuffer.slice(endIndex + 8);
+
+        if (completeMessage.length < 1) continue;
+
+        const msgType = completeMessage[0]; // 消息类型
+        const content = completeMessage.slice(1); // 消息内容
+
+        console.log("完整消息收到:", msgType, content.slice(0, 50));
+
+        if (msgType === "1") {
+          displayTextMessage(content, false);
+        } else if (msgType === "5") { // 文件传输开始
+          const fileData = JSON.parse(content);
+          fileChunks[fileData.fileId] = {
+            chunks: new Array(fileData.totalChunks),
+            receivedChunks: 0,
+            totalChunks: fileData.totalChunks,
+            fileName: fileData.fileName,
+            fileSize: fileData.fileSize
+          };
+          displayFileTransferMessage(fileData.fileName, fileData.fileId, fileData.fileSize, false);
+        } else if (msgType === "6") { // ACK消息
+          if (content === "ACK" && sendingFile) {
+            // 服务器已准备好接收文件
+            sendFileChunk();
+          }
+        } else if (msgType === "7") { // 文件分块数据
+          handleFileChunk(content);
+        }
+      }
+    };
+  }
+
+  function displayTextMessage(content, isSent) {
+    const messageDiv = document.getElementById("messages");
+    const newMessage = document.createElement("div");
+    newMessage.className = isSent ? "message sent" : "message received";
+
+    const messageHeader = document.createElement("div");
+    messageHeader.className = "message-header";
+
+    // 添加发送者标识
+    const senderIndicator = document.createElement("span");
+    senderIndicator.textContent = isSent ? "我: " : "对方: ";
+    senderIndicator.style.fontWeight = "bold";
+
+    const timeText = document.createElement("span");
+    timeText.textContent = new Date().toLocaleTimeString();
+
+    messageHeader.appendChild(senderIndicator);
+    messageHeader.appendChild(timeText);
+
+    const messageContent = document.createElement("div");
+    messageContent.className = "message-content";
+
+    const textContent = document.createElement("div");
+    textContent.className = "text-message";
+    textContent.textContent = content;
+
+    messageContent.appendChild(textContent);
+    newMessage.appendChild(messageHeader);
+    newMessage.appendChild(messageContent);
+
+    // 添加操作按钮
+    const actionsDiv = document.createElement("div");
+    actionsDiv.className = "message-actions";
+
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "copy-btn";
+    copyBtn.innerHTML = "📋 复制";
+    copyBtn.onclick = function() {
+      // 首先尝试使用现代clipboard API
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(content).then(() => {
+          const originalText = copyBtn.innerHTML;
+          copyBtn.innerHTML = "✓ 已复制";
+          setTimeout(() => {
+            copyBtn.innerHTML = originalText;
+          }, 2000);
+        });
+      } else {
+        // 降级处理：使用传统方法
+        const textArea = document.createElement("textarea");
+        textArea.value = content;
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          const originalText = copyBtn.innerHTML;
+          copyBtn.innerHTML = "✓ 已复制";
+          setTimeout(() => {
+            copyBtn.innerHTML = originalText;
+          }, 2000);
+        } catch (err) {
+          console.error('复制失败', err);
+        }
+        document.body.removeChild(textArea);
+      }
+    };
+
+    actionsDiv.appendChild(copyBtn);
+    newMessage.appendChild(actionsDiv);
+
+    messageDiv.appendChild(newMessage);
+    messageDiv.scrollTop = messageDiv.scrollHeight;
+  }
+
+  function displayFileTransferMessage(fileName, fileId, fileSize, isSent) {
+    const messageDiv = document.getElementById("messages");
+    const newMessage = document.createElement("div");
+    newMessage.className = isSent ? "message sent file-transfer" : "message received file-transfer";
+    newMessage.id = "file-transfer-" + fileId;
+
+    const messageHeader = document.createElement("div");
+    messageHeader.className = "message-header";
+
+    // 添加发送者标识
+    const senderIndicator = document.createElement("span");
+    senderIndicator.textContent = isSent ? "我: " : "对方: ";
+    senderIndicator.style.fontWeight = "bold";
+
+    const timeText = document.createElement("span");
+    timeText.textContent = new Date().toLocaleTimeString();
+
+    messageHeader.appendChild(senderIndicator);
+    messageHeader.appendChild(timeText);
+
+    const fileTransferInfo = document.createElement("div");
+    fileTransferInfo.className = "file-transfer-info";
+
+    const fileNameSpan = document.createElement("span");
+    fileNameSpan.className = "file-transfer-name";
+    fileNameSpan.textContent = fileName;
+
+    const fileStatusSpan = document.createElement("span");
+    fileStatusSpan.className = "file-transfer-status";
+    fileStatusSpan.textContent = isSent ? "发送中..." : "接收中...";
+    fileStatusSpan.id = "file-status-" + fileId;
+
+    fileTransferInfo.appendChild(fileNameSpan);
+    fileTransferInfo.appendChild(fileStatusSpan);
+
+    const fileSizeSpan = document.createElement("div");
+    fileSizeSpan.className = "file-size";
+    fileSizeSpan.textContent = formatFileSize(fileSize);
+
+    const progressContainer = document.createElement("div");
+    progressContainer.className = "progress-container";
+
+    const progressBar = document.createElement("div");
+    progressBar.className = "progress-bar";
+    progressBar.id = "progress-bar-" + fileId;
+    progressBar.style.width = "0%";
+
+    progressContainer.appendChild(progressBar);
+
+    newMessage.appendChild(messageHeader);
+    newMessage.appendChild(fileTransferInfo);
+    newMessage.appendChild(fileSizeSpan);
+    newMessage.appendChild(progressContainer);
+
+    messageDiv.appendChild(newMessage);
+    messageDiv.scrollTop = messageDiv.scrollHeight;
+  }
+
+  function updateFileTransferProgress(fileId, progress, status) {
+    const progressBar = document.getElementById("progress-bar-" + fileId);
+    const statusSpan = document.getElementById("file-status-" + fileId);
+
+    if (progressBar) {
+      progressBar.style.width = progress + "%";
+    }
+
+    if (statusSpan) {
+      statusSpan.textContent = status;
+    }
+  }
+
+  function handleFileChunk(content) {
+    try {
+      const data = JSON.parse(content);
+      const { fileId, fileName, chunkIndex, totalChunks, chunkData } = data;
+
+      if (!fileChunks[fileId]) {
+        fileChunks[fileId] = { chunks: [], receivedChunks: 0, totalChunks, fileName };
+      }
+
+      // 存储分块数据
+      fileChunks[fileId].chunks[chunkIndex] = chunkData;
+      fileChunks[fileId].receivedChunks++;
+
+      // 更新进度显示
+      const progressPercent = Math.round((fileChunks[fileId].receivedChunks / totalChunks) * 100);
+      updateFileTransferProgress(fileId, progressPercent, `接收中... ${fileChunks[fileId].receivedChunks}/${totalChunks}`);
+
+      // 如果接收完成
+      if (fileChunks[fileId].receivedChunks === totalChunks) {
+        reconstructFile(fileId);
+        // 传输完成后更新状态
+        setTimeout(() => {
+          updateFileTransferProgress(fileId, 100, "接收完成");
+        }, 500);
+      }
+    } catch (e) {
+      console.error("处理文件分块出错:", e);
+    }
+  }
+
+  function reconstructFile(fileId) {
+    const fileData = fileChunks[fileId];
+    const byteArrays = [];
+
+    for (let i = 0; i < fileData.totalChunks; i++) {
+      const byteString = atob(fileData.chunks[i]);
+      const byteArray = new Uint8Array(byteString.length);
+      for (let j = 0; j < byteString.length; j++) {
+        byteArray[j] = byteString.charCodeAt(j);
+      }
+      byteArrays.push(byteArray);
+    }
+
+    const blob = new Blob(byteArrays);
+    const fileURL = URL.createObjectURL(blob);
+
+    displayFileMessage(`${fileData.fileName}|${fileURL}|${fileData.fileSize}`, false);
+
+    // 移除传输进度消息
+    const transferMessage = document.getElementById("file-transfer-" + fileId);
+    if (transferMessage) {
+      transferMessage.remove();
+    }
+  }
+
+  function displayFileMessage(content, isSent) {
+    const parts = content.split("|");
+    const fileName = parts[0];
+    const fileData = parts[1];
+    const fileSize = parts[2];
+
+    if (!fileName || !fileData) return;
+
+    const messageDiv = document.getElementById("messages");
+    const newMessage = document.createElement("div");
+    newMessage.className = isSent ? "message sent" : "message received";
+
+    const messageHeader = document.createElement("div");
+    messageHeader.className = "message-header";
+
+    // 添加发送者标识
+    const senderIndicator = document.createElement("span");
+    senderIndicator.textContent = isSent ? "我: " : "对方: ";
+    senderIndicator.style.fontWeight = "bold";
+
+    const timeText = document.createElement("span");
+    timeText.textContent = new Date().toLocaleTimeString();
+
+    messageHeader.appendChild(senderIndicator);
+    messageHeader.appendChild(timeText);
+
+    const messageContent = document.createElement("div");
+    messageContent.className = "message-content";
+
+    const fileMessage = document.createElement("div");
+    fileMessage.className = "file-message";
+
+    const fileInfo = document.createElement("div");
+    fileInfo.className = "file-info";
+
+    // 根据文件类型显示不同预览
+    const fileExtension = fileName.split('.').pop().toLowerCase();
+    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(fileExtension);
+    const isVideo = ['mp4', 'webm', 'ogg'].includes(fileExtension);
+    const isAudio = ['mp3', 'wav', 'ogg'].includes(fileExtension);
+
+    let filePreview;
+    if (isImage) {
+      filePreview = document.createElement("img");
+      filePreview.className = "file-preview";
+      filePreview.src = fileData;
+      filePreview.alt = fileName;
+    } else if (isVideo) {
+      filePreview = document.createElement("video");
+      filePreview.className = "file-preview";
+      filePreview.controls = true;
+      filePreview.style.width = "100px";
+      filePreview.style.height = "100px";
+      const source = document.createElement("source");
+      source.src = fileData;
+      source.type = `video/${fileExtension}`;
+      filePreview.appendChild(source);
+    } else if (isAudio) {
+      filePreview = document.createElement("audio");
+      filePreview.controls = true;
+      filePreview.style.width = "100%";
+      filePreview.style.marginTop = "10px";
+      const source = document.createElement("source");
+      source.src = fileData;
+      source.type = `audio/${fileExtension}`;
+      filePreview.appendChild(source);
+    } else {
+      filePreview = document.createElement("div");
+      filePreview.className = "file-preview";
+      filePreview.textContent = "📄";
+      filePreview.style.fontSize = "40px";
+      filePreview.style.display = "flex";
+      filePreview.style.alignItems = "center";
+      filePreview.style.justifyContent = "center";
+    }
+
+    const fileDetails = document.createElement("div");
+    fileDetails.className = "file-details";
+    fileDetails.textContent = fileName;
+
+    fileInfo.appendChild(filePreview);
+    fileInfo.appendChild(fileDetails);
+
+    const fileLink = document.createElement("a");
+    fileLink.href = fileData;
+    fileLink.download = fileName;
+    fileLink.textContent = "下载文件";
+    fileLink.style.display = "none"; // 隐藏原生链接
+
+    // 修改: 创建包含文件大小的下载按钮
+    const downloadContainer = document.createElement("div");
+    downloadContainer.className = "download-btn-container";
+
+    const downloadBtn = document.createElement("div");
+    downloadBtn.className = "download-btn-with-size";
+    downloadBtn.style.cursor = "pointer"; // 确保有手型光标
+
+    const downloadText = document.createElement("span");
+    downloadText.textContent = "📥 下载";
+
+    const fileSizeSpan = document.createElement("span");
+    fileSizeSpan.className = "file-size-indicator";
+    fileSizeSpan.textContent = formatFileSize(fileSize);
+
+    downloadBtn.appendChild(downloadText);
+    downloadBtn.appendChild(fileSizeSpan);
+    downloadBtn.onclick = () => fileLink.click();
+
+    downloadContainer.appendChild(downloadBtn);
+    downloadContainer.appendChild(fileLink);
+
+    fileMessage.appendChild(fileInfo);
+    fileMessage.appendChild(downloadContainer);
+
+    messageContent.appendChild(fileMessage);
+    newMessage.appendChild(messageHeader);
+    newMessage.appendChild(messageContent);
+
+    messageDiv.appendChild(newMessage);
+    messageDiv.scrollTop = messageDiv.scrollHeight;
+  }
+
+  // 格式化文件大小显示
+  function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  createWebSocket();
+
+  function sendMessage() {
+    if (!isConnected) {
+      alert("连接未建立，请稍后再试");
+      return;
+    }
+
+    const input = document.getElementById("message");
+    if (input.value.trim()) {
+      const messageContent = input.value;
+      ws.send("1" + messageContent + "\\\\END///");
+      displayTextMessage(messageContent, true);
+      input.value = "";
+    }
+  }
+
+  function sendFile() {
+    if (!isConnected) {
+      alert("连接未建立，请稍后再试");
+      return;
+    }
+
+    if (sendingFile) {
+      alert("正在发送文件，请稍后再试");
+      return;
+    }
+
+    const fileInput = document.getElementById("fileInput");
+    if (fileInput.files.length > 0) {
+      currentFile = fileInput.files[0];
+      chunkSize = 16 * 1024; // 16KB
+      currentChunk = 0;
+      totalChunks = Math.ceil(currentFile.size / chunkSize);
+      fileId = Date.now().toString();
+      sendingFile = true;
+
+      // 发送文件传输开始信号
+      const initMsg = {
+        fileId: fileId,
+        fileName: currentFile.name,
+        fileSize: currentFile.size,
+        totalChunks: totalChunks
+      };
+
+      ws.send("5" + JSON.stringify(initMsg) + "\\\\END///");
+
+      // 在发送端显示进度条
+      displayFileTransferMessage(currentFile.name, fileId, currentFile.size, true);
+
+      // 清空文件输入
+      fileInput.value = "";
+    }
+  }
+
+  function sendFileChunk() {
+    if (!currentFile || currentChunk >= totalChunks) {
+      // 传输完成
+      sendingFile = false;
+      // 传输完成后更新状态
+      setTimeout(() => {
+        updateFileTransferProgress(fileId, 100, "发送完成");
+        // 延迟移除传输进度消息
+        setTimeout(() => {
+          const transferMessage = document.getElementById("file-transfer-" + fileId);
+          if (transferMessage) {
+            transferMessage.remove();
+          }
+          // 显示文件消息
+          displayFileMessage(`${currentFile.name}|${URL.createObjectURL(currentFile)}|${currentFile.size}`, true);
+        }, 500);
+      }, 500);
+      return;
+    }
+
+    const start = currentChunk * chunkSize;
+    const end = Math.min(start + chunkSize, currentFile.size);
+    const chunk = currentFile.slice(start, end);
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const chunkData = btoa(new Uint8Array(e.target.result).reduce((data, byte) => data + String.fromCharCode(byte), ''));
+
+      const chunkMsg = {
+        fileId: fileId,
+        fileName: currentFile.name,
+        chunkIndex: currentChunk,
+        totalChunks: totalChunks,
+        chunkData: chunkData
+      };
+
+      ws.send("7" + JSON.stringify(chunkMsg) + "\\\\END///");
+
+      // 更新进度
+      currentChunk++;
+      const progressPercent = Math.round((currentChunk / totalChunks) * 100);
+      updateFileTransferProgress(fileId, progressPercent, `发送中... ${currentChunk}/${totalChunks}`);
+
+      // 继续发送下一个分块
+      setTimeout(sendFileChunk, 10); // 稍微延迟以避免阻塞
+    };
+
+    reader.readAsArrayBuffer(chunk);
+  }
+</script>
+</body>
+</html>

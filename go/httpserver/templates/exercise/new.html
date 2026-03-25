@@ -1,0 +1,312 @@
+{{define "title"}}新增运动记录{{end}}
+
+{{define "content"}}
+<style>
+    body {
+        font-family: Arial, sans-serif;
+    }
+
+    .form-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .page-title {
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 20px;
+        color: #333;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .type-grid {
+        display: flex;
+        gap: 10px;
+    }
+    .type-item {
+        flex: 1;
+        text-align: center;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 10px;
+        cursor: pointer;
+    }
+    /* 隐藏原生圆点，选中时变色 */
+    .type-item input { display: none; }
+    .type-item:has(input:checked) {
+        background-color: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+
+    .form-label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 5px;
+        color: #333;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 16px;
+        box-sizing: border-box;
+    }
+
+    .form-select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 16px;
+        box-sizing: border-box;
+        background-color: white;
+    }
+
+    .form-text {
+        font-size: 14px;
+        color: #666;
+        margin-top: 5px;
+    }
+
+    .btn {
+        display: inline-block;
+        padding: 10px 15px;
+        text-decoration: none;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        border: none;
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: #0056b3;
+    }
+
+    .btn-secondary {
+        background-color: #6c757d;
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background-color: #545b62;
+    }
+
+    .btn-group {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 30px;
+    }
+
+    .dynamic-fields {
+        margin-top: 20px;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background-color: #f8f9fa;
+    }
+
+    .dynamic-fields-title {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 15px;
+        color: #333;
+    }
+</style>
+
+<div class="form-container">
+    <div class="page-title">新增运动记录</div>
+
+    <form id="exerciseForm" action="/exercise/new" method="post">
+        <div class="form-group">
+            <label class="form-label">运动类型</label>
+            <div class="type-grid">
+                <label class="type-item"><input type="radio" name="type" value="1"> <span>腹肌</span></label>
+                <label class="type-item"><input type="radio" name="type" value="3"> <span>力量</span></label>
+                <label class="type-item"><input type="radio" name="type" value="2"> <span>跑步</span></label>
+            </div>
+        </div>
+
+        <div class="dynamic-fields" id="dynamicFields" style="display: none;">
+            <div class="dynamic-fields-title">详细信息</div>
+            <div id="fieldsContainer">
+                <!-- 动态字段将在这里插入 -->
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <a href="/exercise/list" class="btn btn-secondary">取消</a>
+            <button type="submit" class="btn btn-primary">保存</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    function formatDatetimeLocal(date) {
+        const pad = n => String(n).padStart(2,'0');
+
+        return date.getFullYear() + '-' +
+            pad(date.getMonth()+1) + '-' +
+            pad(date.getDate()) + 'T' +
+            pad(date.getHours()) + ':' +
+            pad(date.getMinutes()) + ':' +
+            pad(date.getSeconds());
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+        const dynamicFields = document.getElementById('dynamicFields');
+        const fieldsContainer = document.getElementById('fieldsContainer');
+
+        // 运动类型数据
+        const exerciseTypes = {
+            "1": {
+                name: "腹肌",
+                fields: ["start_time", "end_time"]
+            },
+            "3": {
+                name: "力量",
+                fields: ["start_time", "end_time", "situp", "pushup", "curlup", "legsUpTheWallPose"]
+            },
+            "2": {
+                name: "跑步",
+                fields: ["start_time", "end_time", "distance"]
+            }
+        };
+
+        // 字段中文名映射
+        const fieldLabels = {
+            "distance": "距离(km)",
+            "start_time": "开始时间",
+            "end_time": "结束时间",
+            "situp": "仰卧起坐",
+            "pushup": "俯卧撑",
+            "curlup": "卷腹",
+            "legsUpTheWallPose": "靠墙倒立"
+        };
+
+        // 不同运动类型的默认时长（毫秒）
+        const defaultDurations = {
+            "1": (12 * 60 * 1000) + (39 *1000),  // 腹肌默认15分39秒
+            "2": (3600 + 9 * 60) * 1000,  // 跑步默认90分钟
+            "3": 80 * 60000,   // 力量默认80分钟
+        };
+
+        const typeRadios = document.querySelectorAll('input[name="type"]');
+
+        typeRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                const selectedType = this.value;
+
+                if (selectedType && exerciseTypes[selectedType]) {
+                    dynamicFields.style.display = 'block';
+                    renderFields(selectedType);
+                }
+            });
+        });
+
+        function renderFields(type) {
+            const fields = exerciseTypes[type].fields;
+            let html = '';
+
+            fields.forEach(function(field) {
+                const label = fieldLabels[field] || field;
+                // 修改时间输入类型以支持秒
+                const inputType = (field === 'start_time' || field === 'end_time') ? 'datetime-local' : 'text';
+
+                // 设置默认值
+                let defaultValue = '';
+                if (field === 'distance') {
+                    defaultValue = '8.15';
+                }else if(type === '2' && (field === 'start_time' || field === 'end_time')) {
+                    if(field === 'end_time'){
+                        defaultValue = formatDatetimeLocal(new Date());
+                    }else{
+                        const lastTime = localStorage.getItem("run_last_enter_time");
+                        if (lastTime) {
+                            const d = new Date(lastTime);
+                            defaultValue = formatDatetimeLocal(d);
+                        }
+                        const now = new Date();
+                        localStorage.setItem("run_last_enter_time", now.toISOString());
+                    }
+                } else if (type === '3') {
+                    // 为力量设置默认值
+                    switch(field) {
+                        case 'situp':
+                            defaultValue = '520';
+                            break;
+                        case 'pushup':
+                            defaultValue = '130';
+                            break;
+                        case 'curlup':
+                            defaultValue = '117';
+                            break;
+                        case 'legsUpTheWallPose':
+                            defaultValue = '3';
+                            break;
+                    }
+                }
+
+                html += `
+                <div class="form-group">
+                    <label for="${field}" class="form-label">${label}</label>
+                    <input type="${inputType}" id="${field}" name="${field}" class="form-control" step="1" value="${defaultValue}">
+                </div>
+                `;
+            });
+
+            fieldsContainer.innerHTML = html;
+
+            // 添加开始时间和结束时间的联动逻辑
+            const startTimeInput = document.getElementById('start_time');
+            const endTimeInput = document.getElementById('end_time');
+
+            if (startTimeInput && endTimeInput) {
+                startTimeInput.addEventListener('change', function() {
+                    if (this.value) {
+                        // 获取开始时间
+                        const startTime = new Date(this.value);
+                        // 根据运动类型添加不同的默认时长
+                        const duration = defaultDurations[type] || 30 * 60000; // 默认30分钟
+                        const endTime = new Date(startTime.getTime() + duration);
+                        // 格式化为datetime-local格式: YYYY-MM-DDTHH:mm:ss
+                        // 修复时区问题，使用本地时区而不是UTC，并保留秒信息
+                        const formattedEndTime = endTime.toLocaleString('sv-SE', { timeZone: 'Asia/Shanghai' });
+                        endTimeInput.value = formattedEndTime;
+                    }
+                });
+            }
+        }
+
+        // 表单提交验证
+        document.getElementById('exerciseForm').addEventListener('submit', function(e) {
+            const type = document.querySelector('input[name="type"]:checked')?.value;
+            if (!type) {
+                e.preventDefault();
+                alert('请选择运动类型');
+                return false;
+            }
+        });
+
+        const params = new URLSearchParams(window.location.search);
+        const defaultType = params.get("type");
+        if (defaultType) {
+            const radio = document.querySelector(`input[name="type"][value="${defaultType}"]`);
+            if (radio) {
+                radio.checked = true;
+                dynamicFields.style.display = 'block';
+                renderFields(defaultType);
+            }
+        }
+    });
+</script>
+{{end}}

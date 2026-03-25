@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="icon" href="//assets.feehi.com/logo/square/favicon-32x32.png">
+  <title>Children Events AI Prompts</title>
+
+  <style>
+    :root {
+      --bg: #f3f6fb;
+      --card: #ffffff;
+      --primary: #3b82f6;
+      --success: #10b981;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --panel: #0f172a;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 16px;
+      background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: var(--text);
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: auto;
+    }
+
+    h2 {
+      margin: 0 0 16px 0;
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 14px;
+      padding: 16px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+    }
+
+    .form-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .field {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 40px;
+    }
+
+    .field label {
+      font-size: 14px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    select, input {
+      height: 40px;
+      padding: 0 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #fff;
+      font-size: 14px;
+      min-width: 120px;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 10px;
+    }
+
+    button {
+      height: 40px;
+      padding: 0 16px;
+      border-radius: 8px;
+      border: none;
+      font-size: 14px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    button.generate {
+      background: var(--primary);
+      color: white;
+    }
+
+    button.copy {
+      background: var(--success);
+      color: white;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    .status {
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* 文本展示区（日志风格） */
+    #textOutput {
+      margin-top: 18px;
+      background: var(--panel);
+      color: #e5e7eb;
+      border-radius: 12px;
+      padding: 16px;
+      font-family: Menlo, Monaco, monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      overflow: auto;
+      max-height: 65vh;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    @media (max-width: 640px) {
+      .form-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .field {
+        justify-content: space-between;
+      }
+
+      select, input {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .buttons {
+        width: 100%;
+      }
+
+      .buttons button {
+        flex: 1;
+      }
+    }
+
+    .hidden { display: none; }
+  </style>
+</head>
+
+<body>
+<div class="container">
+  <div class="card">
+    <div class="form-row">
+
+      <div class="field">
+        <label>孩子</label>
+        <select id="child">
+          <option value="son">儿子</option>
+          <option value="daughter">女儿</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>时间</label>
+        <select id="range">
+          <option value="today">今天</option>
+          <option value="yesterday">昨天</option>
+          <option value="before2">前天</option>
+          <option value="before3">大前天</option>
+          <option value="week">本周</option>
+          <option value="month">本月</option>
+          <option value="custom">自定义</option>
+        </select>
+      </div>
+
+      <div class="field hidden" id="startGroup">
+        <label>开始</label>
+        <input type="date" id="start"/>
+      </div>
+
+      <div class="field hidden" id="endGroup">
+        <label>结束</label>
+        <input type="date" id="end"/>
+      </div>
+
+      <div class="buttons">
+        <button class="generate" onclick="loadData()">生成</button>
+        <button class="copy" onclick="copyText()">复制</button>
+      </div>
+
+    </div>
+
+    <div class="status" id="status"></div>
+  </div>
+
+  <pre id="textOutput">等待生成数据...</pre>
+</div>
+
+<script>
+  document.getElementById("range").addEventListener("change", function() {
+    const isCustom = this.value === "custom";
+    document.getElementById("startGroup").classList.toggle("hidden", !isCustom);
+    document.getElementById("endGroup").classList.toggle("hidden", !isCustom);
+  });
+
+  async function loadData() {
+    const child = document.getElementById("child").value;
+    const range = document.getElementById("range").value;
+    const start = document.getElementById("start").value;
+    const end = document.getElementById("end").value;
+
+    let url = "/children/ai-prompts?child=" + child + "&range=" + range;
+
+    if (range === "custom") {
+      url += "&start=" + start + "&end=" + end;
+    }
+
+    const t1 = performance.now();
+    const res = await fetch(url, {method:"POST"});
+    const text = await res.text();
+    const t2 = performance.now();
+
+    document.getElementById("textOutput").textContent = text || "无数据";
+
+    const lineCount = text ? text.split("\n").filter(l => l.trim() !== "").length : 0;
+
+    document.getElementById("status").textContent =
+            "记录数: " + lineCount +
+            " ｜ 耗时: " + (t2 - t1).toFixed(1) + " ms";
+  }
+
+  function copyText() {
+    const text = document.getElementById("textOutput").textContent;
+
+    if (navigator.clipboard && window.isSecureContext) {
+      // 优先使用 Clipboard API
+      navigator.clipboard.writeText(text).then(() => {
+        document.getElementById("status").textContent = "文本已复制";
+      }).catch(err => {
+        document.getElementById("status").textContent = "复制失败，请手动复制";
+      });
+    } else {
+      // fallback: execCommand
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed"; // 防止滚动条跳动
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      try {
+        const success = document.execCommand("copy");
+        document.getElementById("status").textContent = success ? "文本已复制" : "复制失败，请手动复制";
+      } catch (err) {
+        document.getElementById("status").textContent = "复制失败，请手动复制";
+      }
+      document.body.removeChild(textarea);
+    }
+  }
+</script>
+
+</body>
+</html>

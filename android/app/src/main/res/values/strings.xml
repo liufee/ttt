@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Feehi</string>
+    <string name="app_scheme">feehi</string>
+    <string name="app_host">feehiapp.com</string>
+</resources>

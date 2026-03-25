@@ -1,0 +1,306 @@
+{{define "title"}}创建微博{{end}}
+
+{{define "content"}}
+<style>
+    body {
+        font-family: Arial, sans-serif;
+    }
+
+    .form-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .page-title {
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 20px;
+        color: #333;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 5px;
+        color: #333;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 16px;
+        box-sizing: border-box;
+    }
+
+    textarea.form-control {
+        resize: vertical;
+        min-height: 120px;
+    }
+
+    /* ===== emoji ===== */
+
+    .editor-toolbar{
+        margin-top:10px;
+        display:flex;
+        gap:10px;
+        align-items:center;
+    }
+
+    .tool-btn{
+        padding:6px 12px;
+        border:1px solid #ddd;
+        border-radius:16px;
+        background:#fff;
+        cursor:pointer;
+    }
+
+    .emoji-panel{
+        display:none;
+        margin-top:10px;
+        border:1px solid #ddd;
+        border-radius:6px;
+        padding:8px;
+        background:#fff;
+    }
+
+    .emoji-grid{
+        display:grid;
+        grid-template-columns:repeat(8,1fr);
+        gap:6px;
+    }
+
+    .emoji-item{
+        cursor:pointer;
+        text-align:center;
+    }
+
+    .emoji-item img{
+        width:24px;
+        height:24px;
+    }
+
+    /* ===== location ===== */
+
+    .location-bar{
+        margin-top:8px;
+        font-size:14px;
+        display:none;
+        align-items:center;
+        gap:6px;
+    }
+
+    .location-text{
+        color:#007bff;
+    }
+
+    .loc-btn{
+        border:none;
+        background:#eee;
+        padding:2px 6px;
+        border-radius:4px;
+        cursor:pointer;
+    }
+
+    .location-input{
+        border:1px solid #ddd;
+        padding:4px 6px;
+        border-radius:4px;
+    }
+
+    .form-text {
+        font-size: 14px;
+        color: #666;
+        margin-top: 5px;
+    }
+
+    .btn {
+        display: inline-block;
+        padding: 10px 15px;
+        text-decoration: none;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        border: none;
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: #0056b3;
+    }
+
+    .btn-secondary {
+        background-color: #6c757d;
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background-color: #545b62;
+    }
+
+    .btn-group {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 30px;
+    }
+
+    #previewContainer {
+        border: 1px solid #ddd;
+        padding: 15px;
+        margin: 20px 0;
+        border-radius: 5px;
+        background-color: #f8f9fa;
+    }
+
+    .preview-title {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 15px;
+        color: #333;
+    }
+
+    .preview-item {
+        display: inline-block;
+        margin: 10px;
+        position: relative;
+        vertical-align: top;
+    }
+
+    .preview-item img, .preview-item video {
+        width: 150px;
+        height: 150px;
+        object-fit: cover;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .preview-item .file-info {
+        font-size: 12px;
+        margin-top: 5px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 150px;
+        text-align: center;
+    }
+
+    .preview-item .remove-btn {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background: #ff4d4f;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .preview-item .file-placeholder {
+        width: 150px;
+        height: 150px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border: 2px dashed #ddd;
+        border-radius: 8px;
+        background-color: #f8f9fa;
+        font-size: 14px;
+        text-align: center;
+        padding: 10px;
+    }
+</style>
+
+<div class="form-container">
+    <div class="page-title">创建新微博</div>
+
+    <form id="weiboForm" action="/weibo/new" method="post" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="uid" class="form-label">发布用户</label>
+            <select id="uid" name="uid" class="form-control" required>
+                {{range .Users}}
+                <option value="{{.ID}}">{{.Name}}</option>
+                {{end}}
+            </select>
+            <div class="form-text">选择发布微博的用户</div>
+        </div>
+
+        <div class="form-group">
+            <label for="content" class="form-label">内容</label>
+            <textarea id="content" name="content" class="form-control" placeholder="分享新鲜事..." required></textarea>
+            <div class="editor-toolbar">
+                <button type="button" id="emojiBtn" class="tool-btn">😀 表情</button>
+                <button type="button" id="locationBtn" class="tool-btn">📍定位</button>
+            </div>
+
+            <div id="emojiPanel" class="emoji-panel">
+                <div id="emojiGrid" class="emoji-grid"></div>
+            </div>
+
+            <div id="locationBar" class="location-bar">
+
+                <span id="locationText" class="location-text"></span>
+
+                <button type="button" id="locationEdit" class="loc-btn">✎</button>
+                <button type="button" id="locationDelete" class="loc-btn">×</button>
+
+                <div id="locationEditor" style="display:none">
+                    <input id="locationInput" class="location-input">
+                    <button type="button" id="locationSave" class="loc-btn">✔</button>
+                    <button type="button" id="locationCancel" class="loc-btn">✖</button>
+                </div>
+
+            </div>
+            <input type="hidden" id="latitude" name="latitude">
+            <input type="hidden" id="longitude" name="longitude">
+            <input type="hidden" id="address" name="address">
+            <div class="form-text" style="color: #dc3545;">内容不能为空</div>
+        </div>
+
+        <div class="form-group">
+            <label for="media" class="form-label">上传文件</label>
+            <input type="file" id="media" name="media" class="form-control" multiple accept="*/*">
+            <div class="form-text">可选择多个文件，支持图片和视频</div>
+        </div>
+
+        <div id="previewContainer">
+            <div class="preview-title">文件预览</div>
+            <div class="preview-area">
+                <!-- 预览将在这里显示 -->
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <a href="/weibo/list" class="btn btn-secondary">取消</a>
+            <button type="submit" class="btn btn-primary" id="submitBtn">发布微博</button>
+        </div>
+    </form>
+</div>
+<script src="/assets?path=weibo/js/emoji.js"></script>
+<script src="/assets?path=weibo/js/common.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        common.init({amapWebKey:'{{.AmapWebKey}}'});
+        const getFiles = common.initFilePreview('media', 'previewContainer');
+        common.initEmoji('emojiBtn','emojiPanel','emojiGrid','content', Emojis);
+        common.initLocation('locationBtn','locationBar','locationText','latitude','longitude','address', 'locationDelete', 'locationEdit', 'locationEditor', 'locationInput', 'locationSave', 'locationCancel');
+        common.initFormSubmit('weiboForm','submitBtn', getFiles, '/weibo/new');
+    });
+</script>
+{{end}}

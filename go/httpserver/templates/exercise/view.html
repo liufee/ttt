@@ -1,0 +1,149 @@
+{{define "title"}}查看运动记录{{end}}
+
+{{define "content"}}
+<style>
+    body {
+        font-family: Arial, sans-serif;
+    }
+
+    .container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .page-title {
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 20px;
+        color: #333;
+    }
+
+    .detail-group {
+        margin-bottom: 20px;
+    }
+
+    .detail-label {
+        font-weight: bold;
+        margin-bottom: 5px;
+        color: #333;
+    }
+
+    .detail-value {
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background-color: #f8f9fa;
+    }
+
+    .btn {
+        display: inline-block;
+        padding: 10px 15px;
+        text-decoration: none;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        border: none;
+    }
+
+    .btn-secondary {
+        background-color: #6c757d;
+        color: white;
+        margin-right: 10px;
+    }
+
+    .btn-secondary:hover {
+        background-color: #545b62;
+    }
+
+    .btn-danger {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background-color: #c82333;
+    }
+
+    .actions {
+        margin-top: 30px;
+    }
+
+    .back-link {
+        display: inline-block;
+        margin-bottom: 20px;
+        color: #007bff;
+        text-decoration: none;
+    }
+
+    .back-link:hover {
+        text-decoration: underline;
+    }
+</style>
+
+<div class="container">
+    <a href="/exercise/list" class="back-link">&larr; 返回列表</a>
+
+    <div class="page-title">运动记录详情</div>
+
+    {{ if eqInt .exercise.TSR 1 }}
+        <div class="detail-group">
+            <div class="detail-label">TSR</div>
+            <div class="detail-value">{{ if .exercise.TSRVerified }} ✅通过 {{else}} ❌未通过 {{end}} </div>
+        </div>
+    {{end}}
+
+    <div class="detail-group">
+        <div class="detail-label">ID</div>
+        <div class="detail-value">{{.exercise.ID}}</div>
+    </div>
+
+    <div class="detail-group">
+        <div class="detail-label">运动类型</div>
+        <div class="detail-value">
+            {{if eq .exercise.Type 1}}腹部训练
+            {{else if eq .exercise.Type 2}}跑步
+            {{else if eq .exercise.Type 3}}力量
+            {{else}}未知类型{{end}}
+        </div>
+    </div>
+
+    <div class="detail-group">
+        <div class="detail-label">开始时间</div>
+        <div class="detail-value">{{.exercise.StartAt.Format "2006-01-02 15:04:05"}}</div>
+    </div>
+
+    <div class="detail-group">
+        <div class="detail-label">结束时间</div>
+        <div class="detail-value">{{.exercise.EndAt.Format "2006-01-02 15:04:05"}}</div>
+    </div>
+
+    <div class="detail-group">
+        <div class="detail-label">详细信息</div>
+        <div class="detail-value">
+            {{if eq .exercise.Type 1}}
+                <!-- 腹部训练 -->
+                <div>腹部训练详情</div>
+            {{else if eq .exercise.Type 2}}
+                <!-- 跑步 -->
+                <div><strong>平均配速:</strong> {{printf "%.2f" .exercise.Run.AvgPace}}</div>
+                <div><strong>距离(km):</strong> {{printf "%.2f" .exercise.Run.Distance}}</div>
+                <div><strong>时长:</strong> {{.exercise.Run.RunDuration}}</div>
+                <div><strong>无定位:</strong> {{.exercise.Run.RunningWithoutPosition}}</div>
+            {{else if eq .exercise.Type 3}}
+                <!-- 力量 -->
+                <div><strong>仰卧起坐:</strong> {{.exercise.SitUpPushUp.SitUp}}</div>
+                <div><strong>俯卧撑:</strong> {{.exercise.SitUpPushUp.PushUp}}</div>
+                <div><strong>卷腹:</strong> {{.exercise.SitUpPushUp.CurlUp}}</div>
+                <div><strong>靠墙静蹲:</strong> {{.exercise.SitUpPushUp.LegsUpTheWallPose}}</div>
+            {{end}}
+        </div>
+    </div>
+
+    <div class="actions">
+        <!-- 删除: <a href="/exercise/edit?id={{.exercise.ID}}" class="btn btn-secondary">编辑</a> -->
+        <a href="/exercise/delete?id={{.exercise.ID}}" class="btn btn-danger"
+           onclick="return confirm('确定要删除这条记录吗？')">删除</a>
+    </div>
+</div>
+{{end}}
+
