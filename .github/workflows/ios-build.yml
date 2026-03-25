@@ -1,4 +1,4 @@
-name: iOS Build
+name: iOS IPA Build
 
 on:
   push:
@@ -15,57 +15,84 @@ jobs:
           fetch-depth: 0
 
       # Node
-      - name: Setup Node
-        uses: actions/setup-node@v3
+      - uses: actions/setup-node@v3
         with:
           node-version: 18
           cache: npm
 
-      - name: Install JS deps
-        run: npm ci
+      - run: npm ci
 
-      # Go
-      - name: Setup Go
-        uses: actions/setup-go@v4
+      # Go + gomobile
+      - uses: actions/setup-go@v4
         with:
           go-version: 1.22
 
-      - name: Install gomobile
-        run: |
+      - run: |
           go install golang.org/x/mobile/cmd/gomobile@latest
           go install golang.org/x/mobile/cmd/gobind@latest
 
-      # 🔥 构建 iOS framework
-      - name: Build Go iOS Framework
-        run: |
-          chmod +x scripts/build-ios-golib.sh
-          ./scripts/build-ios-golib.sh
+      - run: |
+          chmod +x go/build-ios-golib.sh
+          ./go/build-ios-golib.sh
 
-      # 🔥 注入 Xcode 配置（关键）
-      - name: Inject framework to Xcode
+      # 安装证书
+      - name: Install Certificate
         run: |
-          chmod +x scripts/prepare-ios-framework.sh
-          ./scripts/prepare-ios-framework.sh
+          echo "$IOS_P12_BASE64" | base64 --decode > cert.p12
+
+          security create-keychain -p "" build.keychain
+          security import cert.p12 -k build.keychain -P "$IOS_P12_PASSWORD" -T /usr/bin/codesign
+          security list-keychains -s build.keychain
+          security unlock-keychain -p "" build.keychain
+
+      # 安装 profile
+      - name: Install Provisioning Profile
+        run: |
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "$IOS_PROFILE_BASE64" | base64 --decode > profile.mobileprovision
+          cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
 
       # Pods
-      - name: Install Pods
-        run: |
+      - run: |
           cd ios
           pod install
 
-      # Debug
-      - name: Check framework
-        run: |
-          ls -lah ios/libs
-
-      # Build
-      - name: Build iOS
+      # Archive
+      - name: Archive
         run: |
           cd ios
           xcodebuild \
             -workspace FeehiApp.xcworkspace \
             -scheme FeehiApp \
-            -configuration Debug \
-            -sdk iphonesimulator \
-            -destination 'generic/platform=iOS Simulator' \
-            build
+            -configuration Release \
+            -archivePath $PWD/build/FeehiApp.xcarchive \
+            archive \
+            DEVELOPMENT_TEAM=$IOS_TEAM_ID
+
+      # 导出 IPA
+      - name: Export IPA
+        run: |
+          cd ios
+
+          cat > ExportOptions.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>development</string>
+              <key>signingStyle</key>
+              <string>manual</string>
+          </dict>
+          </plist>
+          EOF
+
+          xcodebuild -exportArchive \
+            -archivePath build/FeehiApp.xcarchive \
+            -exportOptionsPlist ExportOptions.plist \
+            -exportPath build/ipa
+
+      # 上传
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa
+          path: ios/build/ipa
