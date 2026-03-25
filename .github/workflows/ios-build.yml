@@ -2,8 +2,7 @@ name: iOS Build
 
 on:
   push:
-    branches: [ master ]
-  pull_request:
+  workflow_dispatch:
 
 jobs:
   build:
@@ -13,21 +12,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      # 1️⃣ Node 环境
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
           node-version: 18
+          cache: npm
 
-      - name: Install deps
+      # 2️⃣ 安装 JS 依赖（关键）
+      - name: Install JS deps
         run: |
-          npm install
+          npm ci
 
-      - name: Install CocoaPods
+      # 3️⃣ CocoaPods
+      - name: Install Pods
         run: |
           cd ios
           pod install
 
-      - name: Build iOS (no signing)
+      # 4️⃣ iOS Build（修复你刚才那个错误）
+      - name: Build iOS
         run: |
           cd ios
           xcodebuild \
