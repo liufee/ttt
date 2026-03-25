@@ -11,26 +11,54 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-      # 1️⃣ Node 环境
+      # Node
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
           node-version: 18
           cache: npm
 
-      # 2️⃣ 安装 JS 依赖（关键）
       - name: Install JS deps
-        run: |
-          npm ci
+        run: npm ci
 
-      # 3️⃣ CocoaPods
+      # Go
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.22
+
+      - name: Install gomobile
+        run: |
+          go install golang.org/x/mobile/cmd/gomobile@latest
+          go install golang.org/x/mobile/cmd/gobind@latest
+
+      # 🔥 构建 iOS framework
+      - name: Build Go iOS Framework
+        run: |
+          chmod +x scripts/build-ios-golib.sh
+          ./scripts/build-ios-golib.sh
+
+      # 🔥 注入 Xcode 配置（关键）
+      - name: Inject framework to Xcode
+        run: |
+          chmod +x scripts/prepare-ios-framework.sh
+          ./scripts/prepare-ios-framework.sh
+
+      # Pods
       - name: Install Pods
         run: |
           cd ios
           pod install
 
-      # 4️⃣ iOS Build（修复你刚才那个错误）
+      # Debug
+      - name: Check framework
+        run: |
+          ls -lah ios/libs
+
+      # Build
       - name: Build iOS
         run: |
           cd ios
