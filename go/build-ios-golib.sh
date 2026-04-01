@@ -14,7 +14,8 @@ GIT_HASH=$(git rev-parse --short HEAD || echo "nogit")
 BUILD_DATE=$(date '+%Y-%m-%d_%H:%M:%S')
 cd go && pwd
 gomobile init && go mod tidy && go mod download
-
+go install golang.org/x/mobile/cmd/gomobile@latest
+go install golang.org/x/mobile/cmd/gobind@latest
 gomobile bind \
   -target=ios \
   -o "$OUT_DIR/$NAME" \
