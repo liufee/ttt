@@ -19,7 +19,7 @@ go get golang.org/x/mobile/bind@v0.0.0-20250711185624-d5bb5ecc55c0
 pwd && ls
 gomobile bind \
   -target=ios \
-  -o "$NAME" \
+  -o "ios/libs/$NAME" \
   -ldflags "-X feehiapp/version.GoGitHash=${GIT_HASH} -X feehiapp/version.GoBuildDate=${BUILD_DATE}" \
   feehiapp/httpserver \
   feehiapp/news \
