@@ -12,7 +12,7 @@ rm -rf "$OUT_DIR/$NAME"
 
 GIT_HASH=$(git rev-parse --short HEAD || echo "nogit")
 BUILD_DATE=$(date '+%Y-%m-%d_%H:%M:%S')
-
+cd go && pwd
 gomobile init && go mod tidy && go mod download
 
 gomobile bind \
