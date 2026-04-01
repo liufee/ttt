@@ -18,6 +18,7 @@ go install golang.org/x/mobile/cmd/gobind@v0.0.0-20250711185624-d5bb5ecc55c0
 go get golang.org/x/mobile/bind@v0.0.0-20250711185624-d5bb5ecc55c0
 gomobile init
 go mod tidy && go mod download
+pwd && ls
 gomobile bind \
   -target=ios \
   -o "$OUT_DIR/$NAME" \
