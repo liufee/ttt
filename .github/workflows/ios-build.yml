@@ -35,23 +35,6 @@ jobs:
           chmod +x go/build-ios-golib.sh
           ./go/build-ios-golib.sh
 
-      # 安装证书
-      - name: Install Certificate
-        run: |
-          echo "$IOS_P12_BASE64" | base64 --decode > cert.p12
-
-          security create-keychain -p "" build.keychain
-          security import cert.p12 -k build.keychain -P "$IOS_P12_PASSWORD" -T /usr/bin/codesign
-          security list-keychains -s build.keychain
-          security unlock-keychain -p "" build.keychain
-
-      # 安装 profile
-      - name: Install Provisioning Profile
-        run: |
-          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          echo "$IOS_PROFILE_BASE64" | base64 --decode > profile.mobileprovision
-          cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
-
       # Pods
       - run: |
           cd ios
