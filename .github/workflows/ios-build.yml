@@ -28,8 +28,8 @@ jobs:
           go-version: 1.23.5
 
       - run: |
-          go install golang.org/x/mobile/cmd/gomobile@latest
-          go install golang.org/x/mobile/cmd/gobind@latest
+          go install golang.org/x/mobile/cmd/gomobile@v0.0.0-20250711185624-d5bb5ecc55c0
+          go install golang.org/x/mobile/cmd/gobind@v0.0.0-20250711185624-d5bb5ecc55c0
 
       - run: |
           chmod +x go/build-ios-golib.sh
