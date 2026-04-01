@@ -21,7 +21,7 @@ go mod tidy && go mod download
 pwd && ls
 gomobile bind \
   -target=ios \
-  -o "$OUT_DIR/$NAME" \
+  -o "$NAME" \
   -ldflags "-X feehiapp/version.GoGitHash=${GIT_HASH} -X feehiapp/version.GoBuildDate=${BUILD_DATE}" \
   feehiapp/httpserver \
   feehiapp/news \
