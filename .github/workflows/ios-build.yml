@@ -49,8 +49,8 @@ jobs:
             -scheme FeehiApp \
             -configuration Release \
             -archivePath $PWD/build/FeehiApp.xcarchive \
-            archive \
-            DEVELOPMENT_TEAM=$IOS_TEAM_ID
+            build \
+            CODE_SIGNING_ALLOWED=NO
 
       # 导出 IPA
       - name: Export IPA
