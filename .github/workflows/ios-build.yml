@@ -50,8 +50,7 @@ jobs:
             -scheme FeehiApp \
             -configuration Release \
             -sdk iphoneos \
-            -derivedDataPath build \
-            clean build | xcpretty
+            clean build
 
       # 导出 IPA
       - name: Export IPA
