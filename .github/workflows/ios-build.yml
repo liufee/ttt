@@ -44,13 +44,14 @@ jobs:
       - name: Archive
         run: |
           cd ios
+          set -o pipefail
           xcodebuild \
             -workspace FeehiApp.xcworkspace \
             -scheme FeehiApp \
             -configuration Release \
-            -archivePath $PWD/build/FeehiApp.xcarchive \
-            build \
-            CODE_SIGNING_ALLOWED=NO
+            -sdk iphoneos \
+            -derivedDataPath build \
+            clean build | xcpretty
 
       # 导出 IPA
       - name: Export IPA

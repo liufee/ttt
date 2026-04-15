@@ -1,0 +1,8 @@
+          xcodebuild \
+            -workspace FeehiApp.xcworkspace \
+            -scheme FeehiApp \
+            -configuration Release \
+            -archivePath $PWD/build/FeehiApp.xcarchive \
+            build \
+            CODE_SIGNING_ALLOWED=NO
+
