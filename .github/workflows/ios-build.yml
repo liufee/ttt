@@ -50,7 +50,11 @@ jobs:
             -scheme FeehiApp \
             -configuration Release \
             -sdk iphoneos \
-            clean build
+            clean build 2>&1 | tee build.log
+
+      - name: Show errors
+    run: |
+      grep -i "error:" ios/build.log || true
 
       # 导出 IPA
       - name: Export IPA
