@@ -50,6 +50,7 @@ jobs:
           -scheme FeehiApp \
           -configuration Release \
           -sdk iphoneos \
+          CODE_SIGNING_ALLOWED=NO \
           clean build 2>&1 | tee build.log || true
 
       - name: Show errors
