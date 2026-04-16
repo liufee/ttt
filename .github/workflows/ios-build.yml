@@ -30,25 +30,7 @@ jobs:
       # Archive
       - name: Archive
         run: |
-          cd ios
-          set -o pipefail
-          xcodebuild \
-          -workspace FeehiApp.xcworkspace \
-          -scheme FeehiApp \
-          -configuration Release \
-          -sdk iphoneos \
-          CODE_SIGNING_ALLOWED=NO \
-          clean build 2>&1 | tee build.log || true
-
-      - name: Show errors
-        run: |
-          echo "===== ERRORS ====="
-          grep -i "error:" ios/build.log || true
-
-      - name: Show last logs
-        run: |
-          echo "===== LAST 200 LINES ====="
-          tail -n 200 ios/build.log
+          npm run ios
 
       # 导出 IPA
       - name: Export IPA
