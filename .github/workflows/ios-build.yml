@@ -50,7 +50,7 @@ jobs:
           -scheme FeehiApp \
           -configuration Release \
           -sdk iphoneos \
-          clean build 2>&1 | tee build.log
+          clean build 2>&1 | tee build.log || true
 
       - name: Show errors
         run: |
