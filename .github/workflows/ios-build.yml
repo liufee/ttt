@@ -46,15 +46,21 @@ jobs:
           cd ios
           set -o pipefail
           xcodebuild \
-            -workspace FeehiApp.xcworkspace \
-            -scheme FeehiApp \
-            -configuration Release \
-            -sdk iphoneos \
-            clean build 2>&1 | tee build.log
+          -workspace FeehiApp.xcworkspace \
+          -scheme FeehiApp \
+          -configuration Release \
+          -sdk iphoneos \
+          clean build 2>&1 | tee build.log
 
       - name: Show errors
         run: |
-         grep -i "error:" ios/build.log || true
+          echo "===== ERRORS ====="
+          grep -i "error:" ios/build.log || true
+
+      - name: Show last logs
+        run: |
+          echo "===== LAST 200 LINES ====="
+          tail -n 200 ios/build.log
 
       # 导出 IPA
       - name: Export IPA
